@@ -129,10 +129,13 @@ already on the default runtimepath.)
 ## Phase 5: Packaging, docs & verification
 Ship-readiness — install instructions, help doc, end-to-end checks.
 
-- [ ] T5.1 `README.md` — real H1 title, lazy.nvim/packer install snippet
+- [x] T5.1 `README.md` — real H1 title, lazy.nvim/packer install snippet
   with `build = "npm install && npm run build"` hook, documented
   limitations (nested `.gitignore`, HCL highlighting gap, Node
-  `$PATH` requirement) — depends: T4.4
+  `$PATH` requirement); GitHub repo description set to match. Empty
+  `README.md` stubs added to every root-level structural folder
+  (`doc/`, `docs/`, `frontend/`, `lua/`, `plugin/`, `server/`, `shared/`)
+  per convention — depends: T4.4
 - [ ] T5.2 `doc/repo-browser.txt` — `:help repo-browser`: commands, config
   options, `:checkhealth repo-browser` (Node on `$PATH`, port free) —
   depends: T4.4
