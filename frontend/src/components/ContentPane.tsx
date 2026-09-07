@@ -60,7 +60,7 @@ export function ContentPane({ path, onNavigate }: ContentPaneProps) {
   if (state.kind === 'error') return <div className="content-pane error">{state.message}</div>;
 
   if (state.kind === 'dir') {
-    if (state.readme) {
+    if (state.readme && state.readme.content && state.readme.content.trim() !== '') {
       return (
         <div className="content-pane">
           <MarkdownView content={state.readme.content ?? ''} />
