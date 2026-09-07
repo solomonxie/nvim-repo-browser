@@ -16,7 +16,11 @@ moved the existing frontend scaffold aside, dropped what no longer fits.
   root `package.json` with `build`/`build:frontend`/`build:server`
   orchestration scripts — depends: none
 - [x] T1.3 Update moved scaffold for the new architecture:
-  `frontend/src/types.ts` → API response shapes (`DirEntry`/`DirListing`/
+  `shared/types.d.ts` (moved again during Phase 2, from
+  `frontend/src/types.ts`, to a repo-root `shared/` so both `frontend/` and
+  `server/` — separate TS projects — import the same source of truth; it's
+  a `.d.ts` since it's pure interfaces, so neither project ever needs to
+  emit or build it) → API response shapes (`DirEntry`/`DirListing`/
   `FileContent`, dropping the old whole-tree `RepoData`/
   `window.__REPO_DATA__`); `vite.config.ts` → `base: '/'`,
   `build.outDir: '../dist-shell'`; `index.html` → drop the `data.js` script
@@ -27,22 +31,30 @@ The core of the pivot: a small `node:http` server, spawned as a job by the
 Lua plugin, that reads the target repo live per request. No batch step, no
 disk-persisted cache — see `docs/design/repo-browser.md` Decision.
 
-- [ ] T2.1 File classification (`server/classify.ts`) — text/image/
+- [x] T2.1 File classification (`server/classify.ts`) — text/image/
   binary/too-large, given a path+stat; ports `buildFileNode`'s
   classification logic from the old (removed) `src/indexer/walk.ts` —
   depends: none
-- [ ] T2.2 Single-directory listing (`server/walk.ts`) — one level of
+- [x] T2.2 Single-directory listing (`server/walk.ts`) — one level of
   `readdir`, root-`.gitignore` filtering via the `ignore` package, sorted
   dirs-then-files; ports the walk half of the old `walk.ts`, made lazy
-  (one directory per call, not the whole tree) — depends: none
-- [ ] T2.3 Live cache (`server/liveCache.ts`) — `getOrLoad(relPath, stat,
+  (one directory per call, not the whole tree). Gotcha hit + fixed: the
+  `ignore` package only matches directory-only gitignore patterns (e.g.
+  `node_modules/`) when the tested path itself carries a trailing slash —
+  depends: none
+- [x] T2.3 Live cache (`server/liveCache.ts`) — `getOrLoad(relPath, stat,
   loader)`: in-memory `Map` keyed by relPath storing `{mtimeMs, size,
   payload}`; always compares the fresh `stat()` first, only calls `loader`
   on a mismatch — depends: none
-- [ ] T2.4 HTTP server entry (`server/index.ts`) — routes (`/`, static
+- [x] T2.4 HTTP server entry (`server/index.ts`) — routes (`/`, static
   `dist-shell/` assets, `/api/tree`, `/api/file`, `/raw/*`), argv (`--root`,
   `--port`), logs `listening on <port>` once bound — wires T2.1–T2.3
-  together — depends: T2.1, T2.2, T2.3
+  together. Built as CommonJS (not ESM/NodeNext) — sidesteps both the
+  `ignore` package's NodeNext/ESM default-export interop typing quirk and
+  the need for explicit `.js` extensions on every relative import; `tsc`'s
+  outDir nesting is kept flat (`server/dist/index.js`, not
+  `server/dist/server/index.js`) precisely because `shared/types.d.ts` is a
+  declaration file and never enters emit — depends: T2.1, T2.2, T2.3
 
 ## Phase 3: Frontend adapted to the live API
 Same rendering stack as originally speced (React/TS, react-markdown,
@@ -50,41 +62,69 @@ highlight.js), but data-sourced via `fetch()` against Phase 2's API instead
 of a baked `window.__REPO_DATA__`, and lazy (fetch a directory's children on
 expand, not the whole tree upfront).
 
-- [ ] T3.1 Hash-based router hook (`frontend/src/lib/router.ts`) —
+- [x] T3.1 Hash-based router hook (`frontend/src/lib/router.ts`) —
   `window.location.hash` + `hashchange` — depends: T1.3
-- [ ] T3.2 API client (`frontend/src/lib/api.ts`) — typed `fetch()` wrappers
+- [x] T3.2 API client (`frontend/src/lib/api.ts`) — typed `fetch()` wrappers
   for `/api/tree` and `/api/file`, replacing the old `window.__REPO_DATA__`
   accessor — depends: T1.3, T2.4
-- [ ] T3.3 `FileTree` + `Breadcrumb` components — recursive tree via native
+- [x] T3.3 `FileTree` + `Breadcrumb` components — recursive tree via native
   `<details>/<summary>`, lazily calling `api.tree()` per directory on
   expand; path breadcrumb — depends: T3.2
-- [ ] T3.4 `MarkdownView` + `CodeView` components — `react-markdown`+
-  `remark-gfm`; `<pre><code>` + `hljs.highlightElement` via `useEffect`,
-  explicit `vim` language registration + a filename/extension→language
-  lookup for extensionless dotfiles (`.zshrc`→bash, `.vimrc`→vim,
-  `.gitconfig`→ini) — depends: T3.2
-- [ ] T3.5 `ContentPane` — dir → its README or a flat child listing (via
+- [x] T3.4 `MarkdownView` + `CodeView` components — `react-markdown`+
+  `remark-gfm`; `<pre><code>` + `hljs.highlightElement` via `useEffect`. Uses
+  highlight.js's full default bundle (every language it ships, vim
+  included) rather than the core+"common"-subset build, so no manual `vim`
+  registration is needed; still keeps the filename/extension→language
+  lookup for extensionless dotfiles hljs's own auto-detection gets wrong
+  (`.zshrc`→bash, `.vimrc`→vim, `.gitconfig`→ini) — depends: T3.2
+- [x] T3.5 `ContentPane` — dir → its README or a flat child listing (via
   `api.tree()`); file → image (`<img src="/raw/...">`)/markdown/code/
-  unsupported branches (binary/too-large placeholders) — depends: T3.3, T3.4
-- [ ] T3.6 `App.tsx` + `main.tsx` — layout shell wiring router + sidebar +
+  unsupported branches (binary/too-large placeholders). Whether `path` is a
+  file or directory is resolved live (`/api/file` 404s on a directory via
+  the server's `readFileSync` EISDIR), not tracked by the router — depends:
+  T3.3, T3.4
+- [x] T3.6 `App.tsx` + `main.tsx` — layout shell wiring router + sidebar +
   breadcrumb + content pane, React mount point — depends: T3.1, T3.5
+
+Verified end-to-end with a headless-Chromium screenshot pass: file tree,
+breadcrumb, README markdown rendering, and syntax-highlighted `.ts` code all
+confirmed visually.
 
 ## Phase 4: Lua plugin wiring
 Ties Phase 2's server to Neovim's job control — spawn/kill lifecycle,
 commands, config.
 
-- [ ] T4.1 Defaults (`lua/repo-browser/config.lua`) — port (`0` =
-  OS-assigned), node binary path override, browser-open command override —
-  depends: none
-- [ ] T4.2 Server lifecycle (`lua/repo-browser/server.lua`) — spawn `node
-  server/dist/index.js --root <path> --port <n>` via `vim.system`/`jobstart`,
-  wait for its `listening on <port>` line, track one server per nvim
-  instance (reuse if root matches, else restart), kill on demand —
-  depends: T4.1, T2.4
-- [ ] T4.3 Public API (`lua/repo-browser/init.lua`) — `setup(opts)`,
-  `open(path?)`, `stop()` — wires T4.1+T4.2 — depends: T4.2
-- [ ] T4.4 Commands (`plugin/repo-browser.lua`) — `:RepoBrowser [path]`,
+- [x] T4.1 Defaults (`lua/repo-browser/config.lua`) — port (`0` =
+  OS-assigned), node binary path override, browser-open command override;
+  also holds `plugin_root()`, the this-file's-own-location path helper
+  shared by `server.lua` and `health.lua` — depends: none
+- [x] T4.2 Server lifecycle (`lua/repo-browser/server.lua`) — spawns `node
+  server/dist/index.js --root <path> --port <n>` via `vim.system`, waits
+  for its `listening on <port>` line (scanned from stdout, 5s timeout),
+  tracks one server per nvim instance (reuse if root matches, else
+  restart), kill on demand — depends: T4.1, T2.4
+- [x] T4.3 Public API (`lua/repo-browser/init.lua`) — `setup(opts)`,
+  `open(path?)`, `stop()` — wires T4.1+T4.2, opens the system browser
+  (`open`/`xdg-open`/`start`, OS-detected) once the server reports ready —
+  depends: T4.2
+- [x] T4.4 Commands (`plugin/repo-browser.lua`) — `:RepoBrowser [path]`,
   `:RepoBrowserStop`, `VimLeavePre` autocmd calling `stop()` — depends: T4.3
+- [x] T4.5 (added, not originally planned) `:checkhealth repo-browser`
+  (`lua/repo-browser/health.lua`) — Node-on-`$PATH` + server-build-exists
+  checks, implemented alongside the rest of the plugin wiring rather than
+  deferred to Phase 5 — depends: T4.1
+
+Verified end-to-end against real Neovim 0.11 (headless, `rtp`-installed):
+`:RepoBrowser <path>` starts the server and reports its URL; a second
+`:RepoBrowser` call on the same root reuses it; `:RepoBrowserStop` and
+`VimLeavePre` both correctly kill the Node process (confirmed via `ps` +
+a failed `curl` after quit — no orphaned process); opening a different root
+after stopping starts a fresh server. (Test caveat: `-u NONE` alone sets
+`loadplugins=false`, which skips the automatic `plugin/*.lua` sourcing
+pass entirely — a real plugin-manager install doesn't hit this, but a
+from-scratch headless test needs `--cmd "set loadplugins"` restored, plus
+`--clean` instead of bare `-u NONE` to avoid pulling in unrelated plugins
+already on the default runtimepath.)
 
 ## Phase 5: Packaging, docs & verification
 Ship-readiness — install instructions, help doc, end-to-end checks.

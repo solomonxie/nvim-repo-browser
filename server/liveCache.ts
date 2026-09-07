@@ -1,9 +1,24 @@
-// T2.3 (see docs/design/repo-browser-plan.md) -- in-memory, per-process
-// cache keyed by relPath: { mtimeMs, size, payload }. getOrLoad() always
-// stats first; only re-reads/re-walks when mtime+size differ from the
-// cached entry. Never persisted to disk -- lives only for the server
-// process's lifetime (one per nvim session). Ports the diff logic from the
-// old src/indexer/cache.ts (pre-pivot), moved from a batch pre-pass to a
-// live per-request check.
+// T2.3: in-memory, per-process cache keyed by relPath. Always compare a
+// fresh stat first -- only re-run `loader` when mtime+size differ from
+// what's cached. Never persisted to disk; lives only for the server
+// process's lifetime (one per nvim session).
 
-export {};
+interface Entry<T> {
+  mtimeMs: number;
+  size: number;
+  payload: T;
+}
+
+export class LiveCache<T> {
+  private entries = new Map<string, Entry<T>>();
+
+  getOrLoad(relPath: string, mtimeMs: number, size: number, loader: () => T): T {
+    const cached = this.entries.get(relPath);
+    if (cached && cached.mtimeMs === mtimeMs && cached.size === size) {
+      return cached.payload;
+    }
+    const payload = loader();
+    this.entries.set(relPath, { mtimeMs, size, payload });
+    return payload;
+  }
+}
