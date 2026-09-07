@@ -1,0 +1,3 @@
+-- T4.4 (see docs/design/repo-browser-plan.md) -- :RepoBrowser [path] and
+-- :RepoBrowserStop user commands, plus a VimLeavePre autocmd that stops
+-- any running server so nothing outlives this nvim session.

@@ -1,0 +1,6 @@
+*repo-browser.txt*	GitHub-like local repo browser, hosted by nvim
+
+T5.3 (see docs/design/repo-browser-plan.md) -- :help repo-browser content:
+commands, options, :checkhealth repo-browser (Node on PATH, port free).
+
+vim:tw=78:ts=8:noet:ft=help:norl:

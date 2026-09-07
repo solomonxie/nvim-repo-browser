@@ -1,4 +1,4 @@
-# Zero-server repo file browser
+# nvim-hosted repo file browser
 
 ## Problem
 A Doxygen prototype (tried first) hit two structural ceilings for browsing a
@@ -6,64 +6,101 @@ shell/dotfiles-style repo: no real syntax highlighting for shell/vim/yaml
 (Doxygen only semantically parses C-family/Python/etc.), and folders
 containing only markdown vanish from the file tree (Doxygen treats `.md` as
 a "Page," not a "File"). Need a GitHub-like local file browser that fits
-arbitrary repos, opens with zero setup (double-click, no server), and can be
-regenerated cheaply after edits.
+arbitrary repos, always shows current disk content, and requires no manual
+regeneration step.
+
+The first redesign (pure `file://`, zero background process ever) baked the
+whole repo into a static `data.js` via a batch indexer CLI. That reintroduced
+a manual "re-run to see your latest edits" step. Switching to an nvim-hosted
+live server removes that step entirely: content is read from disk at the
+moment you view it, not pre-baked.
 
 ## Goals
-- Generic CLI, works against any target repo path
-- True `file://` zero-server — no background process required to view
-- Incremental regeneration: re-run is fast, doesn't rebuild the whole app
+- Generic Neovim plugin, works against any target repo path (arg, or cwd)
+- Content is always current: reading a file/directory means reading it live
+  off disk *at that moment* — no regenerate/rebuild step, ever
 - GitHub-like UX: folder tree, rendered README, syntax-highlighted code
 - Zero footprint on the browsed repo — no files written into the target repo
-- Self-contained runtime — pins its own node/npm, not dependent on the
-  caller's shell `$PATH`
+- Server lifetime is scoped to the editor session — started on
+  `:RepoBrowser`, killed on `:RepoBrowserStop` or `VimLeavePre`; nothing
+  outlives nvim
 
 ## Non-goals
-- Not hosted/multi-user — single local viewer
+- Not hosted/multi-user — single local viewer, one nvim session
 - No full-text code search (v1)
 - No nested `.gitignore` support — root-level only (v1)
 - No git history/blame/diff browsing — current working tree only
 - Not chasing 100% highlight.js language coverage (e.g. Terraform/HCL
   renders unhighlighted, accepted)
+- No auto-push-on-file-change to an already-open browser tab (confirmed
+  out of scope) — freshness is guaranteed *when you click/reload*, not via
+  a file-watcher + WebSocket pushing updates into an idle tab
 
 ## Options considered
 - **Doxygen** — free highlighting/xref for languages it parses, but wrong
   grain for a shell-heavy repo (see Problem). Rejected.
-- **pandoc + custom glue script** — handles markdown+highlighting well, but
-  the GitHub-like chrome (tree nav, routing, breadcrumbs) is 100% custom
-  regardless. A React SPA gives the same custom-glue cost with better
-  client-side interactivity (instant nav, collapsible tree) than
-  pre-rendering one static HTML file per source file.
-- **Existing local git browsers** (gitea, `git instaweb`, cgit, Sourcegraph
-  `src serve-local`) — all require a background server process. Ruled out
-  by the zero-server requirement.
-- **Custom React/TypeScript SPA + Node indexer CLI** — chosen: full control
-  over UX/data flow, client-side rendering keeps the generator fast, and
-  splits the rarely-changing app shell from the frequently-regenerated data
-  for real incremental speed.
+- **Static `file://` SPA + batch indexer CLI** (first redesign) — a Node CLI
+  walked the repo once and baked a `window.__REPO_DATA__` snapshot into
+  `data.js`; truly zero-server, but every edit needed a manual re-run to
+  show up, and the whole tree had to be walked/read upfront even for a
+  single-file view. Superseded by this design.
+- **Pure-Lua server via `vim.uv` (libuv), in nvim's own process** — no
+  subprocess, no runtime dependency beyond nvim, and could even reflect
+  unsaved buffer content directly. Rejected for v1: HTTP/1.1 has no
+  built-in parser in Lua (would need hand-rolled header/query parsing), and
+  the confirmed requirement is disk content, not unsaved-buffer content —
+  the buffer-awareness advantage doesn't apply here.
+- **Node child process spawned by nvim, live per-request** — chosen: reuses
+  `node:http` (mature, no hand-rolled HTTP parsing), Node is already a
+  pinned runtime dependency of this project, and the plugin can spawn/kill
+  it exactly like nvim already manages LSP server jobs.
 
 ## Decision
-Build a small React/TS SPA (Vite, `base: './'`) that reads a
-`window.__REPO_DATA__` object injected via a plain `<script>` tag — not
-`fetch()`, which `file://` blocks for local files. A separate Node CLI
-indexer walks a target repo (respecting its root `.gitignore`), classifies
-files (text / image / binary / too-large), and emits that data as a JS
-assignment (`data.js`). A bash CLI wrapper (`bin/repo-browser`) pins the
-user's own node/npm (`~/virtualnode/venv/bin/{node,npm}`) rather than
-trusting `$PATH`, builds the app shell once (cached in the tool's own
-`dist-shell/`), and on every subsequent invocation only re-runs the cheap
-indexer step, writing output to `/tmp/repo-browser/<hash-of-target-path>/`
-— never into the browsed repo. Markdown (`react-markdown` + `remark-gfm`)
-and syntax highlighting (`highlight.js`) both render client-side from raw
-text, keeping the indexer itself simple and fast.
+A Neovim plugin (`lua/repo-browser/`) exposes `:RepoBrowser [path]`, which
+spawns a Node HTTP server (`server/`) as a background job rooted at the
+target path, waits for it to report ready, and opens the system browser.
+`:RepoBrowserStop` / a `VimLeavePre` autocmd kills the job.
+
+The server serves a prebuilt React/TS SPA shell (`frontend/`, built once via
+Vite into `dist-shell/` — same rendering stack as before: file tree,
+breadcrumb, `react-markdown`+`remark-gfm` for markdown, `highlight.js` for
+code) plus a small live JSON API:
+- `GET /api/tree?path=<rel>` — one directory's immediate children, filtered
+  by the target repo's root `.gitignore` (lazy: only the directory being
+  viewed, not the whole tree)
+- `GET /api/file?path=<rel>` — text file content and classification
+- `GET /raw/<rel>` — raw bytes for images (`<img src="/raw/...">` directly,
+  no base64 data-URI embedding)
+
+Every request `stat()`s the target path first — content is read fresh at
+the moment it's requested, guaranteeing it reflects whatever's on disk right
+then. An in-memory `Map<relPath, {mtimeMs, size, payload}>` inside the Node
+process skips re-reading/re-walking only when the stat is unchanged since
+the last time that path was served; it's a pure "skip redundant work"
+optimization, never a source of staleness, and it lives only for the
+server process's lifetime (no disk persistence, no separate cache file).
+
+**Important clarification carried into this design** (this took several
+rounds to align on): "prebuilt" applies only to the React *app shell*
+(compiled once via `vite build`, like any TSX must be) — it never applies
+to repo content. Every click on a file/folder triggers a live `fetch()` to
+the running server, which reads disk at that instant. This is why no
+file-watcher or auto-push mechanism is needed: freshness is guaranteed
+*when you look*, not via background polling.
 
 ## Risks / open questions
 - highlight.js has no HCL/Terraform grammar — accepted gap, documented in
   the README rather than switching highlighting libraries.
 - Root-only `.gitignore` support may under-filter repos that rely on nested
   `.gitignore` rules — documented v1 limitation.
-- `/tmp` is ephemeral (cleared on reboot) — acceptable, since regeneration
-  is cheap; the cache's speed benefit just resets after a reboot.
-- The pinned `~/virtualnode/venv/bin/{node,npm}` path is specific to this
-  machine — fine for a personal tool, would need a config/`$PATH` fallback
-  to generalize to another user's setup.
+- Node must be on the end user's `$PATH` for the plugin to work at all —
+  a real runtime dependency (unlike the rejected pure-Lua option), though
+  already true of this machine's setup; `:checkhealth repo-browser` should
+  surface a clear error if missing.
+- One server per nvim instance, rooted at whatever path first opened it —
+  calling `:RepoBrowser` with a *different* path restarts the server
+  pointed at the new root (documented behavior, not a bug).
+- If nvim is killed with `-9` (bypassing `VimLeavePre`), the Node child
+  process can be orphaned — acceptable for a personal tool; `:RepoBrowserStop`
+  is available as a manual escape hatch, and the process is harmless
+  (read-only, localhost-bound) if it lingers.
