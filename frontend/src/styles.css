@@ -114,12 +114,22 @@ details[open] > summary .tree-chevron-icon { transform: rotate(90deg); }
 .breadcrumb a:hover { text-decoration: underline; }
 .breadcrumb-sep { color: var(--muted); }
 
-.dir-listing { list-style: none; padding: 0; }
-.dir-listing li { padding: 4px 0; }
-.dir-listing a { cursor: pointer; color: var(--link); text-decoration: none; }
-.dir-listing a:hover { text-decoration: underline; }
-
 .placeholder, .error { color: var(--muted); font-style: italic; }
+
+/* Boxed directory listing above a folder's README, GitHub-style -- no
+   commit column, DirEntry doesn't carry one. */
+.dir-box { margin-bottom: 16px; }
+.dir-box-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+.dir-box-row:last-child { border-bottom: none; }
+.dir-box-row:hover { background: var(--surface); }
+.dir-box-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* GitHub's bordered file-view card -- Preview/Code/Blame tabs. */
 .file-box { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; font-size: 15px; }
@@ -130,6 +140,13 @@ details[open] > summary .tree-chevron-icon { transform: rotate(90deg); }
   background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
+/* Folder page's README box -- just a filename, no Preview/Code/Blame
+   tabs (there's nothing to switch between here). */
+.file-box-header--plain { font-weight: 600; }
+/* Clickable dir-box header -- toggles the row list; chevron rotates the
+   same way the sidebar tree's does. */
+.dir-box-toggle { cursor: pointer; user-select: none; gap: 6px; }
+.dir-box-toggle--open .tree-chevron-icon { transform: rotate(90deg); }
 .file-box-tabs { display: flex; gap: 4px; }
 .file-box-tab { padding: 6px 14px; border: 1px solid transparent; border-radius: 6px; background: none; cursor: pointer; color: var(--fg); font-size: 15px; }
 .file-box-tab:hover { background: var(--bg); }
@@ -198,6 +215,13 @@ details[open] > summary .tree-chevron-icon { transform: rotate(90deg); }
 .markdown-body table { border-collapse: collapse; }
 .markdown-body th, .markdown-body td { border: 1px solid var(--border); padding: 0.4rem 0.8rem; }
 .markdown-body img { max-width: 100%; }
+/* GFM task list -- the list's own bullet still renders next to the
+   checkbox unless dropped explicitly. mdast-util-to-hast already tags
+   these <li>s with a "task-list-item" class for exactly this purpose (its
+   checkbox lands as a direct <li> child in a tight list, but nested one
+   level deeper in a <p> for a loose one -- the class covers both). */
+.markdown-body li.task-list-item { list-style: none; margin-left: -1.4em; }
+.markdown-body input[type="checkbox"] { margin: 0 0.5em 0 0; vertical-align: middle; }
 
 .mermaid-diagram { text-align: center; margin: 1rem 0; }
 .mermaid-diagram svg { max-width: 100%; }

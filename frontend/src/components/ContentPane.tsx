@@ -10,6 +10,7 @@ import { fetchFile, fetchTree, isImageExt, rawUrl } from '../lib/api';
 import { MarkdownView } from './MarkdownView';
 import { CodeView } from './CodeView';
 import { FileBox } from './FileBox';
+import { ChevronIcon } from './icons';
 
 type ContentState =
   | { kind: 'loading' }
@@ -19,6 +20,43 @@ type ContentState =
 
 function findReadme(entries: DirEntry[]): DirEntry | undefined {
   return entries.find((e) => e.type === 'file' && /^readme\.md$/i.test(e.name));
+}
+
+// GitHub-style boxed directory listing -- Name only, no per-file commit
+// info (nothing in DirEntry carries it, and a git-log-per-file round trip
+// isn't worth it here).
+function DirBox({ path, entries, onNavigate }: { path: string; entries: DirEntry[]; onNavigate: (path: string) => void }) {
+  const [collapsed, setCollapsed] = useState(true);
+  const parent = path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '';
+  return (
+    <div className="file-box dir-box">
+      <div
+        className={`file-box-header file-box-header--plain dir-box-toggle${collapsed ? '' : ' dir-box-toggle--open'}`}
+        onClick={() => setCollapsed((c) => !c)}
+      >
+        <span className="tree-chevron" aria-hidden="true">
+          <ChevronIcon />
+        </span>
+        {entries.length} {entries.length === 1 ? 'item' : 'items'}
+      </div>
+      {!collapsed && (
+        <div className="dir-box-body">
+          {path !== '' && (
+            <div className="dir-box-row" onClick={() => onNavigate(parent)}>
+              <span className="tree-icon" aria-hidden="true">📁</span>
+              <span className="dir-box-name">..</span>
+            </div>
+          )}
+          {entries.map((e) => (
+            <div key={e.path} className="dir-box-row" onClick={() => onNavigate(e.path)}>
+              <span className="tree-icon" aria-hidden="true">{e.type === 'dir' ? '📁' : '📄'}</span>
+              <span className="dir-box-name">{e.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 interface ContentPaneProps {
@@ -61,22 +99,18 @@ export function ContentPane({ path, onNavigate }: ContentPaneProps) {
   if (state.kind === 'error') return <div className="content-pane error">{state.message}</div>;
 
   if (state.kind === 'dir') {
-    if (state.readme && state.readme.content && state.readme.content.trim() !== '') {
-      return (
-        <div className="content-pane">
-          <MarkdownView path={state.readme.path} content={state.readme.content ?? ''} onNavigate={onNavigate} />
-        </div>
-      );
-    }
+    const hasReadme = state.readme && state.readme.content && state.readme.content.trim() !== '';
     return (
       <div className="content-pane">
-        <ul className="dir-listing">
-          {state.listing.entries.map((e) => (
-            <li key={e.path}>
-              <a onClick={() => onNavigate(e.path)}>{e.type === 'dir' ? `${e.name}/` : e.name}</a>
-            </li>
-          ))}
-        </ul>
+        <DirBox path={path} entries={state.listing.entries} onNavigate={onNavigate} />
+        {hasReadme && (
+          <div className="file-box">
+            <div className="file-box-header file-box-header--plain">{state.readme!.path.split('/').pop()}</div>
+            <div className="file-box-body">
+              <MarkdownView path={state.readme!.path} content={state.readme!.content ?? ''} onNavigate={onNavigate} />
+            </div>
+          </div>
+        )}
       </div>
     );
   }
