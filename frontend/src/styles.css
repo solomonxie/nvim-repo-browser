@@ -159,14 +159,15 @@ details[open] > summary::before { content: '▾'; }
 .markdown-body h1, .markdown-body h2, .markdown-body h3,
 .markdown-body h4, .markdown-body h5, .markdown-body h6 { color: var(--fg); }
 .markdown-body h1, .markdown-body h2 { padding-bottom: 0.3em; border-bottom: 1px solid var(--border); }
-/* text-decoration-color pinned explicitly so nested inline code doesn't
-   paint its own segment of the underline pink -- without this, browsers
-   color each part of the line by its own text color, giving a two-tone
-   underline. */
 .markdown-body a { color: var(--link); text-decoration-color: var(--link); }
 /* :not(pre) so this doesn't fight highlight.js's own .hljs background/
    padding on fenced code -- only bare inline code gets the chip style. */
 .markdown-body :not(pre) > code { background: var(--code-inline-bg); color: var(--code-inline); padding: 0.1rem 0.3rem; border-radius: 4px; }
+/* text-decoration-color isn't inherited (it resets to currentcolor on
+   every element), so a linked `code` chip would otherwise draw its own
+   pink segment of the underline instead of picking up the link's blue --
+   force it back to whatever the nearest ancestor actually set. */
+.markdown-body a code { text-decoration-color: inherit; }
 .markdown-body blockquote { border-left: 3px solid var(--border); margin-left: 0; padding-left: 1rem; color: var(--muted); }
 .markdown-body hr { border: none; border-top: 1px solid var(--border); }
 .markdown-body table { border-collapse: collapse; }
