@@ -3,7 +3,6 @@
 import { readFileSync } from 'node:fs';
 import { extname } from 'node:path';
 import type { FileContent } from '../shared/types';
-import { renderMarkdown } from './pandoc';
 
 const MAX_TEXT_BYTES = 1_000_000; // 1MB
 const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico']);
@@ -24,20 +23,18 @@ export function classifyFile(absPath: string, relPath: string, size: number): Fi
   const ext = extname(absPath).toLowerCase();
 
   if (size > MAX_TEXT_BYTES) {
-    return { path: relPath, ext, size, binary: false, tooLarge: true, content: null, renderedHtml: null };
+    return { path: relPath, ext, size, binary: false, tooLarge: true, content: null };
   }
 
   if (isImage(ext)) {
     // content served separately via /raw/<path>, not inlined here
-    return { path: relPath, ext, size, binary: false, tooLarge: false, content: null, renderedHtml: null };
+    return { path: relPath, ext, size, binary: false, tooLarge: false, content: null };
   }
 
   const buf = readFileSync(absPath);
   if (isBinary(buf)) {
-    return { path: relPath, ext, size, binary: true, tooLarge: false, content: null, renderedHtml: null };
+    return { path: relPath, ext, size, binary: true, tooLarge: false, content: null };
   }
 
-  const content = buf.toString('utf-8');
-  const renderedHtml = ext === '.md' ? renderMarkdown(absPath) : null;
-  return { path: relPath, ext, size, binary: false, tooLarge: false, content, renderedHtml };
+  return { path: relPath, ext, size, binary: false, tooLarge: false, content: buf.toString('utf-8') };
 }
