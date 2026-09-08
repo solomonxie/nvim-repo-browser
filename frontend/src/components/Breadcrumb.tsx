@@ -1,13 +1,14 @@
-// T3.3: path breadcrumb -- root + one clickable crumb per path segment.
+// T3.3: path breadcrumb -- repo name + one clickable crumb per path segment.
 
 interface BreadcrumbProps {
   path: string;
+  rootLabel: string;
   onNavigate: (path: string) => void;
 }
 
-export function Breadcrumb({ path, onNavigate }: BreadcrumbProps) {
+export function Breadcrumb({ path, rootLabel, onNavigate }: BreadcrumbProps) {
   const segments = path.split('/').filter(Boolean);
-  const crumbs: { name: string; path: string }[] = [{ name: 'root', path: '' }];
+  const crumbs: { name: string; path: string }[] = [{ name: rootLabel, path: '' }];
   let acc = '';
   for (const seg of segments) {
     acc = acc ? `${acc}/${seg}` : seg;

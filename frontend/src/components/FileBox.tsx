@@ -1,25 +1,20 @@
 // GitHub's bordered file-view card: Preview/Code/Blame mode tabs (Preview
-// only for markdown), a line-count/size meta line, and a Raw link --
-// wraps whatever the caller renders for Preview/Code via a render prop,
-// since that content (MarkdownView vs CodeView) is already decided by
-// ContentPane based on the file's extension.
+// only for markdown) -- wraps whatever the caller renders for Preview/
+// Code via a render prop, since that content (MarkdownView vs CodeView)
+// is already decided by ContentPane based on the file's extension.
 
 import { useState, type ReactNode } from 'react';
-import { rawUrl } from '../lib/api';
-import { formatBytes } from '../lib/format';
 import { BlameView } from './BlameView';
 
 export type FileMode = 'preview' | 'code' | 'blame';
 
 interface FileBoxProps {
   path: string;
-  size: number;
-  lineCount: number;
   showPreview: boolean;
   children: (mode: 'preview' | 'code') => ReactNode;
 }
 
-export function FileBox({ path, size, lineCount, showPreview, children }: FileBoxProps) {
+export function FileBox({ path, showPreview, children }: FileBoxProps) {
   const [mode, setMode] = useState<FileMode>(showPreview ? 'preview' : 'code');
 
   return (
@@ -38,12 +33,6 @@ export function FileBox({ path, size, lineCount, showPreview, children }: FileBo
             Blame
           </button>
         </div>
-        <div className="file-box-meta">
-          {lineCount} lines &middot; {formatBytes(size)}
-        </div>
-        <a className="file-box-raw" href={rawUrl(path)} target="_blank" rel="noopener noreferrer">
-          Raw
-        </a>
       </div>
       <div className="file-box-body">{mode === 'blame' ? <BlameView path={path} /> : children(mode)}</div>
     </div>
