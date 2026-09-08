@@ -1,11 +1,11 @@
 // T3.3: recursive file tree via native <details>/<summary> (free
 // expand/collapse), lazily fetching a directory's children on first
-// expand rather than the whole tree upfront.
+// expand rather than the whole tree upfront. Emoji icons (📁/📂/📄)
+// instead of custom SVGs -- trivial to resize via font-size, no markup.
 
 import { useEffect, useState } from 'react';
 import type { DirEntry } from '../../../shared/types';
 import { fetchTree } from '../lib/api';
-import { FileIcon, FolderIcon } from './icons';
 
 interface TreeNodeProps {
   entry: DirEntry;
@@ -16,18 +16,20 @@ interface TreeNodeProps {
 function TreeNode({ entry, selectedPath, onSelect }: TreeNodeProps) {
   const [children, setChildren] = useState<DirEntry[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   if (entry.type === 'file') {
     const selected = entry.path === selectedPath;
     return (
       <div className={`tree-row tree-file${selected ? ' selected' : ''}`} onClick={() => onSelect(entry.path)}>
-        <FileIcon />
+        <span className="tree-icon" aria-hidden="true">📄</span>
         <span className="tree-label">{entry.name}</span>
       </div>
     );
   }
 
   async function handleToggle(e: React.SyntheticEvent<HTMLDetailsElement>) {
+    setIsOpen(e.currentTarget.open);
     if (e.currentTarget.open && children === null) {
       setLoading(true);
       const listing = await fetchTree(entry.path);
@@ -39,7 +41,7 @@ function TreeNode({ entry, selectedPath, onSelect }: TreeNodeProps) {
   return (
     <details onToggle={handleToggle}>
       <summary className={`tree-row${entry.path === selectedPath ? ' selected' : ''}`} onClick={() => onSelect(entry.path)}>
-        <FolderIcon />
+        <span className="tree-icon" aria-hidden="true">{isOpen ? '📂' : '📁'}</span>
         <span className="tree-label">{entry.name}</span>
       </summary>
       {loading && <div className="tree-row tree-loading">Loading…</div>}
