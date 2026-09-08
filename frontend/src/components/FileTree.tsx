@@ -28,6 +28,27 @@ function TreeNode({ entry, selectedPath, onSelect }: TreeNodeProps) {
     );
   }
 
+  const isAncestorOfSelection = selectedPath === entry.path || selectedPath.startsWith(`${entry.path}/`);
+
+  // Navigating to a path via something other than the tree itself (a
+  // markdown link, the breadcrumb, browser back/forward) never fires
+  // <details onToggle>, so without this the ancestor folders of the newly
+  // selected file would stay collapsed and its row wouldn't even be in the
+  // DOM yet (children are fetched lazily on open).
+  useEffect(() => {
+    if (isAncestorOfSelection && (!isOpen || children === null)) {
+      setIsOpen(true);
+      if (children === null) {
+        setLoading(true);
+        fetchTree(entry.path).then((listing) => {
+          setChildren(listing.entries);
+          setLoading(false);
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPath]);
+
   async function handleToggle(e: React.SyntheticEvent<HTMLDetailsElement>) {
     setIsOpen(e.currentTarget.open);
     if (e.currentTarget.open && children === null) {
@@ -39,7 +60,7 @@ function TreeNode({ entry, selectedPath, onSelect }: TreeNodeProps) {
   }
 
   return (
-    <details onToggle={handleToggle}>
+    <details open={isOpen} onToggle={handleToggle}>
       <summary className={`tree-row${entry.path === selectedPath ? ' selected' : ''}`} onClick={() => onSelect(entry.path)}>
         <span className="tree-icon" aria-hidden="true">{isOpen ? '📂' : '📁'}</span>
         <span className="tree-label">{entry.name}</span>
