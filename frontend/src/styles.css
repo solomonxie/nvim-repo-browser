@@ -111,6 +111,44 @@ details[open] > summary::before { content: '▾'; }
 
 .placeholder, .error { color: var(--muted); font-style: italic; }
 
+/* GitHub's bordered file-view card -- Preview/Code/Blame tabs, a line-
+   count/size meta line, a Raw link. */
+.file-box { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.file-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.file-box-tabs { display: flex; gap: 2px; }
+.file-box-tab { padding: 4px 12px; border: 1px solid transparent; border-radius: 6px; background: none; cursor: pointer; color: var(--fg); font-size: 13px; }
+.file-box-tab:hover { background: var(--bg); }
+.file-box-tab.active { background: var(--bg); border-color: var(--border); font-weight: 600; }
+.file-box-meta { color: var(--muted); white-space: nowrap; }
+.file-box-raw { color: var(--link); text-decoration: none; white-space: nowrap; }
+.file-box-raw:hover { text-decoration: underline; }
+.file-box-body { padding: 16px; }
+
+.blame-view { font-family: monospace; font-size: 12px; overflow-x: auto; }
+.blame-row { display: flex; }
+.blame-gutter {
+  width: 220px;
+  flex-shrink: 0;
+  padding: 2px 10px;
+  color: var(--muted);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.blame-author { font-weight: 500; margin-right: 6px; color: var(--fg); }
+.blame-line { margin: 0; padding: 2px 10px; white-space: pre; flex: 1; }
+
 /* Code -- background/text color come from the active highlight.js theme
    (swapped between github.css/github-dark.css in lib/theme.tsx) via its
    own .hljs class, not hardcoded here, so it always matches the site

@@ -11,6 +11,7 @@
 //   GET /api/commit?sha=   -> CommitDetail (git show, incl. diff)
 //   GET /api/insights/contributors     -> ContributorList (git log tally)
 //   GET /api/insights/code-frequency   -> CodeFrequencyList (git log --numstat, weekly)
+//   GET /api/blame?path=   -> BlameResult (git blame --line-porcelain, live working-tree content)
 //
 // argv: --root <path> --port <n> (0 = OS-assigned). Logs a single
 // "listening on <port>" line once bound -- lua/repo-browser/server.lua
@@ -22,7 +23,7 @@ import { join, normalize, extname, basename } from 'node:path';
 import { listDir, repoName } from './walk';
 import { classifyFile } from './classify';
 import { LiveCache } from './liveCache';
-import { isGitRepo, listCommits, getCommit, listContributors, codeFrequency } from './git';
+import { isGitRepo, listCommits, getCommit, listContributors, codeFrequency, blameFile } from './git';
 import type { DirListing, FileContent } from '../shared/types';
 
 function parseArgs(argv: string[]): { root: string; port: number } {
@@ -132,13 +133,24 @@ const server = createServer((req, res) => {
     return send(res, 200, 'application/json', JSON.stringify(codeFrequency(root)));
   }
 
+  if (url.pathname === '/api/blame') {
+    if (!isGitRepo(root)) return send(res, 404, 'application/json', JSON.stringify({ error: 'not a git repository' }));
+    const relPath = url.searchParams.get('path');
+    const lines = relPath ? blameFile(root, relPath) : null;
+    if (!lines) return send(res, 404, 'application/json', JSON.stringify({ error: 'blame unavailable' }));
+    return send(res, 200, 'application/json', JSON.stringify({ lines }));
+  }
+
   if (url.pathname.startsWith('/raw/')) {
     const relPath = url.pathname.slice('/raw/'.length);
     const absPath = safeJoin(root, relPath);
     if (!absPath) return send(res, 400, 'text/plain', 'invalid path');
     try {
       statSync(absPath); // 404s cleanly before streaming starts
-      const mime = RAW_MIME[extname(absPath).toLowerCase()] ?? 'application/octet-stream';
+      // Unknown extensions default to plain text (the "Raw" button on a
+      // source file) rather than a download prompt; genuinely binary
+      // files just show as garbled text, matching GitHub's own raw view.
+      const mime = RAW_MIME[extname(absPath).toLowerCase()] ?? 'text/plain; charset=utf-8';
       res.writeHead(200, { 'Content-Type': mime });
       createReadStream(absPath).pipe(res);
       return;

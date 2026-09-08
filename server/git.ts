@@ -7,7 +7,9 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import type { CodeFrequencyList, CommitDetail, CommitList, CommitSummary, ContributorList } from '../shared/types';
+import type { BlameLine, CodeFrequencyList, CommitDetail, CommitList, CommitSummary, ContributorList } from '../shared/types';
+
+const ZERO_SHA = '0000000000000000000000000000000000000000'; // git blame's "Not Committed Yet" marker
 
 const US = '\x1f'; // unit separator -- between fields
 const RS = '\x1e'; // record separator -- between commits
@@ -91,6 +93,60 @@ function weekStart(ymd: string): string {
   const sinceMonday = (date.getUTCDay() + 6) % 7;
   date.setUTCDate(date.getUTCDate() - sinceMonday);
   return date.toISOString().slice(0, 10);
+}
+
+// Blames the file's *current* content (working tree, not just HEAD) --
+// git blame does this by default, showing ZERO_SHA/"Not Committed Yet"
+// for locally modified lines, matching this app's live-content philosophy.
+export function blameFile(root: string, relPath: string): BlameLine[] | null {
+  let out: string;
+  try {
+    out = git(root, ['blame', '--line-porcelain', '--', relPath]);
+  } catch {
+    return null;
+  }
+
+  const meta = new Map<string, { author: string; authorTime: number }>();
+  const lines = out.split('\n');
+  const result: BlameLine[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const header = /^([0-9a-f]{40}) \d+ \d+/.exec(lines[i]);
+    if (!header) {
+      i++;
+      continue;
+    }
+    const sha = header[1];
+    i++;
+
+    let entry = meta.get(sha);
+    while (i < lines.length && !lines[i].startsWith('\t')) {
+      const line = lines[i];
+      if (line.startsWith('author ')) {
+        entry = { author: line.slice(7), authorTime: entry?.authorTime ?? 0 };
+      } else if (line.startsWith('author-time ')) {
+        entry = { author: entry?.author ?? '', authorTime: Number(line.slice(12)) };
+      }
+      i++;
+    }
+    if (entry) meta.set(sha, entry);
+
+    const content = i < lines.length ? lines[i].slice(1) : '';
+    i++;
+
+    const found = meta.get(sha);
+    result.push({
+      sha,
+      shortSha: sha.slice(0, 7),
+      author: found?.author ?? '',
+      date: found?.authorTime ? new Date(found.authorTime * 1000).toISOString() : '',
+      line: content,
+      committed: sha !== ZERO_SHA,
+    });
+  }
+
+  return result;
 }
 
 export function codeFrequency(root: string): CodeFrequencyList {

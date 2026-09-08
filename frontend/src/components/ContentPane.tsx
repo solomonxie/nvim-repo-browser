@@ -9,6 +9,7 @@ import type { DirEntry, DirListing, FileContent } from '../../../shared/types';
 import { fetchFile, fetchTree, isImageExt, rawUrl } from '../lib/api';
 import { MarkdownView } from './MarkdownView';
 import { CodeView } from './CodeView';
+import { FileBox } from './FileBox';
 
 type ContentState =
   | { kind: 'loading' }
@@ -94,16 +95,28 @@ export function ContentPane({ path, onNavigate }: ContentPaneProps) {
   if (file.binary) {
     return <div className="content-pane placeholder">Binary file not shown.</div>;
   }
+  const lineCount = (file.content ?? '').split('\n').length;
+
   if (file.ext === '.md') {
     return (
       <div className="content-pane">
-        <MarkdownView path={file.path} content={file.content ?? ''} onNavigate={onNavigate} />
+        <FileBox path={file.path} size={file.size} lineCount={lineCount} showPreview>
+          {(mode) =>
+            mode === 'preview' ? (
+              <MarkdownView path={file.path} content={file.content ?? ''} onNavigate={onNavigate} />
+            ) : (
+              <CodeView path={file.path} ext={file.ext} content={file.content ?? ''} />
+            )
+          }
+        </FileBox>
       </div>
     );
   }
   return (
     <div className="content-pane">
-      <CodeView path={file.path} ext={file.ext} content={file.content ?? ''} />
+      <FileBox path={file.path} size={file.size} lineCount={lineCount} showPreview={false}>
+        {() => <CodeView path={file.path} ext={file.ext} content={file.content ?? ''} />}
+      </FileBox>
     </div>
   );
 }
