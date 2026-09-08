@@ -13,6 +13,7 @@ import remarkGfm from 'remark-gfm';
 import hljs from 'highlight.js';
 import mermaid from 'mermaid';
 import { resolveRelativeLink } from '../lib/paths';
+import { rawUrl } from '../lib/api';
 import { useTheme } from '../lib/theme';
 
 function MermaidDiagram({ source }: { source: string }) {
@@ -83,6 +84,15 @@ export function MarkdownView({ path, content, onNavigate }: MarkdownViewProps) {
           {children}
         </a>
       );
+    },
+    img({ src, alt }) {
+      // Same issue as links: a relative src resolves against the page's
+      // real URL path (always "/" under hash routing), not this file's
+      // directory -- and there's no static route for arbitrary repo
+      // paths anyway. Resolve it the same way as links, then point it at
+      // /raw/<path>, which does serve arbitrary file bytes.
+      const resolved = src ? resolveRelativeLink(path, src) : null;
+      return <img src={resolved !== null ? rawUrl(resolved) : src} alt={alt} />;
     },
     code({ className, children }) {
       const lang = /language-(\w+)/.exec(className ?? '')?.[1];
