@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import type { CommitDetail as CommitDetailData } from '../../../shared/types';
 import { ApiError, fetchCommit } from '../lib/api';
+import { dateTime } from '../lib/format';
 import { CodeView } from './CodeView';
 
 interface CommitDetailProps {
@@ -34,7 +35,7 @@ export function CommitDetail({ sha, onBack }: CommitDetailProps) {
       <h2>{commit.subject}</h2>
       {commit.body && <pre className="commit-body">{commit.body}</pre>}
       <div className="commit-meta">
-        <code>{commit.shortSha}</code> {commit.author} · {new Date(commit.date).toLocaleString()}
+        <code>{commit.shortSha}</code> {commit.author} · {dateTime(commit.date)}
       </div>
       <CodeView path={`${commit.shortSha}.diff`} ext=".diff" content={commit.diff} />
     </div>

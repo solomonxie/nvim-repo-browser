@@ -1,12 +1,12 @@
-// T6.4: GitHub's Code/Issues/Pull requests tabs, made local: Code /
-// Commits / Branches.
+// T6.4/T6.5: GitHub's Code/Issues/Pull requests tabs, made local: Code /
+// Commits / Insights.
 
 import type { Route } from '../lib/router';
 
 const TABS: { page: Route['page']; label: string }[] = [
   { page: 'code', label: 'Code' },
   { page: 'commits', label: 'Commits' },
-  { page: 'branches', label: 'Branches' },
+  { page: 'insights', label: 'Insights' },
 ];
 
 interface TopTabsProps {

@@ -21,7 +21,6 @@ export interface FileContent {
   binary: boolean;
   tooLarge: boolean;
   content: string | null; // null for binary/image/too-large -- fetch raw bytes from /raw/<path> instead
-  renderedHtml: string | null; // pandoc-rendered HTML fragment, .md files only (null if pandoc unavailable/failed)
 }
 
 export interface CommitSummary {
@@ -42,15 +41,21 @@ export interface CommitDetail extends CommitSummary {
   diff: string; // unified diff, unparsed -- rendered as a diff-highlighted code block
 }
 
-export interface Branch {
-  name: string;
-  remote: boolean;
-  current: boolean;
-  sha: string;
-  subject: string;
-  date: string; // ISO 8601
+export interface Contributor {
+  author: string;
+  commits: number;
 }
 
-export interface BranchList {
-  branches: Branch[];
+export interface ContributorList {
+  contributors: Contributor[];
+}
+
+export interface CodeFrequencyWeek {
+  week: string; // Monday of the week, YYYY-MM-DD
+  additions: number;
+  deletions: number;
+}
+
+export interface CodeFrequencyList {
+  weeks: CodeFrequencyWeek[];
 }

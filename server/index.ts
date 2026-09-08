@@ -8,7 +8,8 @@
 //   GET /raw/*             -> raw bytes (images), streamed directly
 //   GET /api/commits[?before=&limit=]  -> CommitList (git log, paged)
 //   GET /api/commit?sha=   -> CommitDetail (git show, incl. diff)
-//   GET /api/branches      -> BranchList (git for-each-ref, local+remote)
+//   GET /api/insights/contributors     -> ContributorList (git log tally)
+//   GET /api/insights/code-frequency   -> CodeFrequencyList (git log --numstat, weekly)
 //
 // argv: --root <path> --port <n> (0 = OS-assigned). Logs a single
 // "listening on <port>" line once bound -- lua/repo-browser/server.lua
@@ -20,7 +21,7 @@ import { join, normalize, extname, basename } from 'node:path';
 import { listDir, repoName } from './walk';
 import { classifyFile } from './classify';
 import { LiveCache } from './liveCache';
-import { isGitRepo, listCommits, getCommit, listBranches } from './git';
+import { isGitRepo, listCommits, getCommit, listContributors, codeFrequency } from './git';
 import type { DirListing, FileContent } from '../shared/types';
 
 function parseArgs(argv: string[]): { root: string; port: number } {
@@ -116,9 +117,14 @@ const server = createServer((req, res) => {
     return send(res, 200, 'application/json', JSON.stringify(commit));
   }
 
-  if (url.pathname === '/api/branches') {
+  if (url.pathname === '/api/insights/contributors') {
     if (!isGitRepo(root)) return send(res, 404, 'application/json', JSON.stringify({ error: 'not a git repository' }));
-    return send(res, 200, 'application/json', JSON.stringify(listBranches(root)));
+    return send(res, 200, 'application/json', JSON.stringify(listContributors(root)));
+  }
+
+  if (url.pathname === '/api/insights/code-frequency') {
+    if (!isGitRepo(root)) return send(res, 404, 'application/json', JSON.stringify({ error: 'not a git repository' }));
+    return send(res, 200, 'application/json', JSON.stringify(codeFrequency(root)));
   }
 
   if (url.pathname.startsWith('/raw/')) {
