@@ -74,4 +74,5 @@ pins a fixed one.
 
 ![Reader](screenshot-reader.png)
 ![Code](screenshot-code.png)
+![Blame](screenshot-blame.png)
 ![Commits](screenshot-commits.png)
