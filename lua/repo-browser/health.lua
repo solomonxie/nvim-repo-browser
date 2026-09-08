@@ -22,6 +22,12 @@ function M.check()
   else
     vim.health.error('server not built -- run `npm run build` in ' .. config.plugin_root())
   end
+
+  if vim.fn.executable('pandoc') == 1 then
+    vim.health.ok("'pandoc' found on $PATH")
+  else
+    vim.health.warn("'pandoc' not found on $PATH -- markdown falls back to plain client-side rendering (no mermaid diagrams)")
+  end
 end
 
 return M
