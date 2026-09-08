@@ -19,6 +19,14 @@ export function CommitIcon() {
   );
 }
 
+export function ChevronIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="16" height="16" className="tree-chevron-icon" aria-hidden="true">
+      <path fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" d="M5.5 3.5 10 8l-4.5 4.5" />
+    </svg>
+  );
+}
+
 export function InsightsIcon() {
   return (
     <svg viewBox="0 0 16 16" width="16" height="16" className="tab-icon" aria-hidden="true">

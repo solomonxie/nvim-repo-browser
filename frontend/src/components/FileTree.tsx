@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import type { DirEntry } from '../../../shared/types';
 import { fetchTree } from '../lib/api';
+import { ChevronIcon } from './icons';
 
 interface TreeNodeProps {
   entry: DirEntry;
@@ -22,6 +23,9 @@ function TreeNode({ entry, selectedPath, onSelect }: TreeNodeProps) {
     const selected = entry.path === selectedPath;
     return (
       <div className={`tree-row tree-file${selected ? ' selected' : ''}`} onClick={() => onSelect(entry.path)}>
+        {/* empty chevron slot -- keeps this icon aligned under folder icons,
+            which sit past their own chevron */}
+        <span className="tree-chevron" aria-hidden="true" />
         <span className="tree-icon" aria-hidden="true">📄</span>
         <span className="tree-label">{entry.name}</span>
       </div>
@@ -62,6 +66,9 @@ function TreeNode({ entry, selectedPath, onSelect }: TreeNodeProps) {
   return (
     <details open={isOpen} onToggle={handleToggle}>
       <summary className={`tree-row${entry.path === selectedPath ? ' selected' : ''}`} onClick={() => onSelect(entry.path)}>
+        {/* replaces the native <details> marker; rotates via CSS on
+            details[open] rather than swapping glyphs */}
+        <span className="tree-chevron" aria-hidden="true"><ChevronIcon /></span>
         <span className="tree-icon" aria-hidden="true">{isOpen ? '📂' : '📁'}</span>
         <span className="tree-label">{entry.name}</span>
       </summary>

@@ -94,13 +94,20 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; ba
 .tree-children { margin-left: 10px; padding-left: 10px; border-left: 1px solid var(--border); }
 .tree-loading, .tree-error { color: var(--muted); font-style: italic; padding: 4px 6px; }
 
+/* Summary rows (folders) get a browser-drawn disclosure triangle by
+   default -- dropped in favor of .tree-chevron below so its size/spacing
+   matches across browsers and lines up with tree-file's empty slot. */
+.file-tree summary { list-style: none; }
+.file-tree summary::-webkit-details-marker { display: none; }
+
+/* Fixed size regardless of contents so folder and file icons -- which both
+   follow this slot -- land at the same x position. Sized above the icon
+   itself for an easier click target. */
+.tree-chevron { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+.tree-chevron-icon { transition: transform 0.15s ease; }
+details[open] > summary .tree-chevron-icon { transform: rotate(90deg); }
 .tree-icon { flex-shrink: 0; font-size: 18px; line-height: 1; }
 .tree-label { overflow: hidden; text-overflow: ellipsis; }
-
-summary { list-style: none; }
-summary::-webkit-details-marker { display: none; }
-summary::before { content: '▸'; display: inline-block; width: 0.8em; color: var(--muted); flex-shrink: 0; }
-details[open] > summary::before { content: '▾'; }
 
 .breadcrumb { margin-bottom: 16px; font-size: 18px; font-weight: 600; }
 .breadcrumb a { cursor: pointer; color: var(--link); text-decoration: none; }
@@ -127,14 +134,15 @@ details[open] > summary::before { content: '▾'; }
 .file-box-tab { padding: 6px 14px; border: 1px solid transparent; border-radius: 6px; background: none; cursor: pointer; color: var(--fg); font-size: 15px; }
 .file-box-tab:hover { background: var(--bg); }
 .file-box-tab.active { background: var(--bg); border-color: var(--border); font-weight: 600; }
-.file-box-body { padding: 12px; }
+.file-box-body { padding: 14px; }
+.file-box-body--flush { padding: 0; }
 
 .blame-view { font-family: monospace; font-size: 12px; overflow-x: auto; }
 .blame-row { display: flex; }
 .blame-gutter {
   width: 220px;
   flex-shrink: 0;
-  padding: 2px 10px;
+  padding: 2px 14px;
   color: var(--muted);
   background: var(--surface);
   border-right: 1px solid var(--border);
@@ -143,23 +151,32 @@ details[open] > summary::before { content: '▾'; }
   text-overflow: ellipsis;
 }
 .blame-author { font-weight: 500; margin-right: 6px; color: var(--fg); }
-.blame-line { margin: 0; padding: 2px 10px; white-space: pre; flex: 1; }
+.blame-line { margin: 0; padding: 2px 14px; white-space: pre; flex: 1; }
+/* Extra top padding on the first row's own cells, not a gap above them --
+   a plain gap there would leave the gutter's surface-colored background
+   starting abruptly below it, reading as a floating box. */
+.blame-row:first-child .blame-gutter, .blame-row:first-child .blame-line { padding-top: 12px; }
 
 /* Code -- background/text color come from the active highlight.js theme
    (swapped between github.css/github-dark.css in lib/theme.tsx) via its
    own .hljs class, not hardcoded here, so it always matches the site
-   theme; padding/scroll/radius are the wrapping <pre>'s job. Margin is
-   reset since the browser's own default <pre> margin (1em top/bottom)
-   would otherwise stack with this padding. */
+   theme. Margin is reset since the browser's own default <pre> margin
+   (1em top/bottom) would otherwise stack with this padding. */
 .code-view, .markdown-body pre { margin: 0; overflow-x: auto; border-radius: 6px; padding: 14px; font-size: 13px; }
+/* code-view's own text inset moves onto its .hljs child instead (see
+   below) so the <pre> itself can stay tight -- it's what draws the
+   scrollable/bordered box, and a full 14px there left visible dead
+   space at the edge. */
+.code-view { padding: 2px; }
 /* Override just the theme's own base color/background (its .hljs-* token
    colors are untouched) -- highlight.js's github-dark.css happens to use
    the exact same background as our page, giving zero visible contrast.
    Its stylesheet also sets its own padding on .hljs (1em on a fenced
-   block, 3px 5px inline) -- zero that out too, since the <pre>/chip
-   above already supplies padding; left in, it stacked with it into a
-   large gap before the first line, worst on narrow viewports. */
+   block, 3px 5px inline); for markdown-body that stacks with the <pre>'s
+   own 14px into a large gap before the first line, so it's zeroed out
+   there -- but for code-view it's the sole padding, so it keeps 14px. */
 .code-view .hljs, .markdown-body .hljs { background: var(--surface); color: var(--fg); padding: 0; }
+.code-view .hljs { padding: 14px; }
 
 .markdown-body h1, .markdown-body h2, .markdown-body h3,
 .markdown-body h4, .markdown-body h5, .markdown-body h6 { color: var(--fg); }
