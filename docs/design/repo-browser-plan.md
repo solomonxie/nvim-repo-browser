@@ -145,3 +145,34 @@ Ship-readiness — install instructions, help doc, end-to-end checks.
   `:qa` leaves no orphaned Node process (`ps`/`lsof -i` before/after);
   zero-footprint check (`git status` stays clean in the target repo) —
   depends: T5.1, T5.2
+
+## Phase 6: Post-v1 enhancements
+Requested after real interactive use. Not part of the original design doc's
+v1 scope, but coherent extensions of it.
+
+- [x] T6.1 Pandoc-based markdown rendering (`server/pandoc.ts`,
+  `server/classify.ts`) — GFM fragment (`-f gfm --embed-resources`, no
+  `-s`), a new `renderedHtml` field on `FileContent`; mirrors the pipeline
+  in `~/myconf/dotfiles/vim/vimrc-functions.vim`'s `PreviewMarkdown()`
+  (pandoc, mermaid, dark/light) but rendered inline
+  (`dangerouslySetInnerHTML`) instead of as a standalone file, so links
+  can be intercepted (see T6.2). Falls back to the existing client-side
+  `react-markdown` render when pandoc isn't on `$PATH` (`:checkhealth`
+  warns, doesn't error). Mermaid via the `mermaid` npm package, dark/light
+  toggle persisted per-browser via `localStorage`
+  (`frontend/src/lib/theme.ts`) — depends: T3.4
+- [x] T6.2 Fix: markdown links 404'd — a relative link's `href` resolves
+  against the page's real URL path (always `/` under hash routing), not
+  the current hash fragment, so `<a href="./other.md">` tried to navigate
+  to `/other.md` instead of updating the hash. Fixed by intercepting link
+  clicks inside the rendered markdown (`frontend/src/lib/paths.ts`'s
+  `resolveRelativeLink`, used by both the pandoc and `react-markdown`
+  render paths in `MarkdownView.tsx`) and routing them through the app's
+  own `onNavigate` instead of letting the browser navigate; external
+  `http(s)` links get `target="_blank"` — depends: T6.1
+- [ ] T6.3 File tree UI polish, GitHub-like (icons, spacing, hover) —
+  kept simple per request — depends: none
+- [ ] T6.4 Top tabs like GitHub's Code/Issues/PRs: **Code** (existing
+  browser) / **Commits** (Tig-like list via `git log`, click a commit for
+  its full diff via `git show`) / **Branches** (local + remote via
+  `git branch`) — depends: none

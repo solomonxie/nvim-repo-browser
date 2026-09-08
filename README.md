@@ -3,7 +3,8 @@
 A GitHub-like file browser for any local repo, hosted entirely by Neovim.
 `:RepoBrowser` spawns a small live server and opens it in your browser;
 quitting Neovim shuts it down. Every click reads the file fresh off disk —
-no indexing step, nothing to regenerate after an edit.
+no indexing step, nothing to regenerate after an edit. Markdown renders via
+pandoc (GFM, mermaid diagrams, dark/light toggle).
 
 See `docs/design/repo-browser.md` for the why and
 `docs/design/repo-browser-plan.md` for the implementation plan.
@@ -11,6 +12,8 @@ See `docs/design/repo-browser.md` for the why and
 ## Requirements
 - Neovim 0.10+ (`vim.system`)
 - Node on `$PATH` (runs the live server; `:checkhealth repo-browser` verifies)
+- pandoc on `$PATH` (optional — renders markdown with GFM + mermaid diagrams;
+  without it, markdown falls back to plain client-side rendering)
 
 ## Install
 
