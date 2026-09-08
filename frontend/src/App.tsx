@@ -2,8 +2,10 @@
 // Insights) + a global theme toggle + per-page content, wired to the
 // hash router.
 
+import { useEffect } from 'react';
 import { useRoute } from './lib/router';
 import { useTheme } from './lib/theme';
+import { fetchMeta } from './lib/api';
 import { TopTabs } from './components/TopTabs';
 import { FileTree } from './components/FileTree';
 import { Breadcrumb } from './components/Breadcrumb';
@@ -15,6 +17,16 @@ import { Insights } from './components/Insights';
 export function App() {
   const [route, navigate] = useRoute();
   const { theme, toggle } = useTheme();
+
+  useEffect(() => {
+    fetchMeta()
+      .then((meta) => {
+        document.title = meta.name;
+      })
+      .catch(() => {
+        // leave the static fallback title from index.html
+      });
+  }, []);
 
   return (
     <div className="app-shell">

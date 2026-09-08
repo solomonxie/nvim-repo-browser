@@ -1,7 +1,7 @@
 // T3.2: typed fetch() wrappers for the live server's JSON API, replacing
 // the old window.__REPO_DATA__ accessor from the pre-pivot design.
 
-import type { CodeFrequencyList, CommitDetail, CommitList, ContributorList, DirListing, FileContent } from '../../../shared/types';
+import type { CodeFrequencyList, CommitDetail, CommitList, ContributorList, DirListing, FileContent, RepoMeta } from '../../../shared/types';
 
 const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico']);
 
@@ -52,4 +52,8 @@ export function fetchContributors(): Promise<ContributorList> {
 
 export function fetchCodeFrequency(): Promise<CodeFrequencyList> {
   return getJson('/api/insights/code-frequency');
+}
+
+export function fetchMeta(): Promise<RepoMeta> {
+  return getJson('/api/meta');
 }

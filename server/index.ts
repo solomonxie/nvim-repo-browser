@@ -1,6 +1,7 @@
 // T2.4: HTTP server entry point. Wires walk.ts + classify.ts + liveCache.ts
 // + git.ts.
 //
+//   GET /api/meta          -> RepoMeta ({name}, the repo's basename -- used as the page title)
 //   GET /                 -> ../dist-shell/index.html (built frontend shell)
 //   GET /assets/*          -> ../dist-shell static assets
 //   GET /api/tree?path=    -> DirListing (one directory level, live)
@@ -73,6 +74,10 @@ const shellDir = join(serverDir, '..', 'dist-shell');
 
 const server = createServer((req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost');
+
+  if (url.pathname === '/api/meta') {
+    return send(res, 200, 'application/json', JSON.stringify({ name: repoName(root) }));
+  }
 
   if (url.pathname === '/api/tree') {
     const relPath = url.searchParams.get('path') ?? '';

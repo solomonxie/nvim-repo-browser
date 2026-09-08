@@ -1,6 +1,9 @@
 -- T4.2: spawn/kill the Node server job, wait for its "listening on <port>"
 -- line, and track one server per nvim instance (reuse if the root path
--- matches, else restart pointed at the new root).
+-- matches, else restart pointed at the new root). Self-builds on first
+-- use if server/dist/index.js is missing, so a plugin-manager `build`/
+-- `run`/`do` hook is a nice-to-have (faster first run) rather than
+-- required.
 
 local config = require('repo-browser.config')
 
@@ -24,24 +27,32 @@ function M.current_root()
   return state.root
 end
 
--- Starts the server (or reuses one already running for the same root).
--- on_ready(port) fires once the server reports it's listening;
--- on_error(message) fires if it never starts.
-function M.start(opts, on_ready, on_error)
-  if state.handle and state.root == opts.root then
-    on_ready(state.port)
-    return
-  end
-  if state.handle then
-    M.stop()
-  end
+-- Runs `npm install && npm run build` in the plugin's own root (not the
+-- browsed repo). on_done() fires on success; on_error(message) on failure.
+local function build_plugin(on_done, on_error)
+  local root = config.plugin_root()
+  vim.notify('[repo-browser] building (first run only, npm install && npm run build)...', vim.log.levels.INFO)
+  vim.system({ 'npm', 'install' }, { cwd = root }, function(install_result)
+    if install_result.code ~= 0 then
+      vim.schedule(function()
+        on_error(('npm install failed (%d): %s'):format(install_result.code, install_result.stderr or ''))
+      end)
+      return
+    end
+    vim.system({ 'npm', 'run', 'build' }, { cwd = root }, function(build_result)
+      if build_result.code ~= 0 then
+        vim.schedule(function()
+          on_error(('npm run build failed (%d): %s'):format(build_result.code, build_result.stderr or ''))
+        end)
+        return
+      end
+      vim.schedule(on_done)
+    end)
+  end)
+end
 
+local function spawn_server(opts, on_ready, on_error)
   local entry = server_entry()
-  if vim.fn.filereadable(entry) == 0 then
-    on_error(('server not built -- run `npm run build` in %s (%s not found)'):format(config.plugin_root(), entry))
-    return
-  end
-
   local node_bin = opts.node_bin or 'node'
   if vim.fn.executable(node_bin) == 0 then
     on_error(("'%s' not found on $PATH -- nvim-repo-browser needs Node to run its live server"):format(node_bin))
@@ -96,6 +107,32 @@ function M.start(opts, on_ready, on_error)
       on_error('server did not report ready within 5s')
     end
   end, 5000)
+end
+
+-- Starts the server (or reuses one already running for the same root).
+-- on_ready(port) fires once the server reports it's listening;
+-- on_error(message) fires if it never starts.
+function M.start(opts, on_ready, on_error)
+  if state.handle and state.root == opts.root then
+    on_ready(state.port)
+    return
+  end
+  if state.handle then
+    M.stop()
+  end
+
+  if vim.fn.filereadable(server_entry()) == 0 then
+    if vim.fn.executable('npm') == 0 then
+      on_error(('server not built and npm not found on $PATH -- run `npm install && npm run build` in %s manually'):format(config.plugin_root()))
+      return
+    end
+    build_plugin(function()
+      M.start(opts, on_ready, on_error) -- retry now that it's built
+    end, on_error)
+    return
+  end
+
+  spawn_server(opts, on_ready, on_error)
 end
 
 function M.stop()
