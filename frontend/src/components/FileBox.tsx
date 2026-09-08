@@ -34,7 +34,14 @@ export function FileBox({ path, showPreview, children }: FileBoxProps) {
           </button>
         </div>
       </div>
-      <div className="file-box-body">{mode === 'blame' ? <BlameView path={path} /> : children(mode)}</div>
+      {/* code and blame both supply their own inset (.code-view; .blame-gutter/
+          .blame-line) -- stacking file-box-body's padding on top of that
+          doubles it, and for blame it also insets the gutter's background/
+          border from the card edge, so drop it for both. Preview (plain
+          markdown text) has none of its own and keeps it. */}
+      <div className={`file-box-body${mode !== 'preview' ? ' file-box-body--flush' : ''}`}>
+        {mode === 'blame' ? <BlameView path={path} /> : children(mode)}
+      </div>
     </div>
   );
 }
