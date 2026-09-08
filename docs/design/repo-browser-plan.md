@@ -170,9 +170,34 @@ v1 scope, but coherent extensions of it.
   render paths in `MarkdownView.tsx`) and routing them through the app's
   own `onNavigate` instead of letting the browser navigate; external
   `http(s)` links get `target="_blank"` — depends: T6.1
-- [ ] T6.3 File tree UI polish, GitHub-like (icons, spacing, hover) —
+- [x] T6.3 File tree UI polish, GitHub-like (`frontend/src/components/
+  icons.tsx`) — small inline-SVG folder/file icons (not a full icon
+  library), tighter row spacing, rounded hover, indentation guide lines —
   kept simple per request — depends: none
-- [ ] T6.4 Top tabs like GitHub's Code/Issues/PRs: **Code** (existing
+- [x] T6.4 Top tabs like GitHub's Code/Issues/PRs: **Code** (existing
   browser) / **Commits** (Tig-like list via `git log`, click a commit for
   its full diff via `git show`) / **Branches** (local + remote via
-  `git branch`) — depends: none
+  `git for-each-ref`) — depends: none
+  - Server (`server/git.ts`): shells out to `git` (array args via
+    `execFileSync`, never a shell — no injection risk regardless of ref
+    content), `-c color.ui=false` guards against a global git config
+    forcing ANSI codes into parsed output. `listCommits` pages via git
+    log's own `<sha>~1` boundary (not offset-based, so it stays correct
+    even if commits land while the list is open). New routes:
+    `GET /api/commits[?before=&limit=]`, `GET /api/commit?sha=`,
+    `GET /api/branches` — all 404 with `{error: 'not a git repository'}`
+    when the target root has no `.git`
+  - Router (`frontend/src/lib/router.ts`) rewritten from a bare path
+    string to a `Route` union (`code`/`commits`/`branches`); an
+    unrecognized/empty hash still defaults to Code so old bare-path links
+    keep working
+  - Frontend: `TopTabs.tsx`, `CommitList.tsx` (paged, "Load more"),
+    `CommitDetail.tsx` (metadata + diff via `CodeView`'s existing `.diff`
+    → highlight.js `diff` language mapping), `BranchList.tsx`
+    (local/remote sections, current branch starred)
+
+Verified end-to-end via headless-Chromium screenshots against this repo's
+own git history: Commits list renders and pages; clicking a commit shows
+its diff with correct add/remove highlighting; Branches shows `master`
+(current, highlighted) and `origin/master` (`origin/HEAD` correctly
+filtered out as a non-branch pointer).
