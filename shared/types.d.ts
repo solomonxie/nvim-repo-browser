@@ -1,6 +1,10 @@
 // Shared shape between the server (producer) and the app (consumer) for the
 // live HTTP API -- GET /api/tree and GET /api/file. Never let these drift.
 
+export interface RepoMeta {
+  name: string; // basename of the browsed repo's root -- used as the page title
+}
+
 export interface DirEntry {
   name: string;
   path: string;

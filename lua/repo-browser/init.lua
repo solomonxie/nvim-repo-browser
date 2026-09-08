@@ -37,9 +37,8 @@ function M.open(path)
   local root = vim.fn.fnamemodify(path or vim.fn.getcwd(), ':p'):gsub('/$', '')
 
   server.start(vim.tbl_extend('force', M.opts, { root = root }), function(port)
-    local url = ('http://127.0.0.1:%d/'):format(port)
-    vim.notify('[repo-browser] serving ' .. root .. ' at ' .. url)
-    open_browser(url, M.opts)
+    -- quiet on success -- the opened browser tab is the confirmation
+    open_browser(('http://127.0.0.1:%d/'):format(port), M.opts)
   end, function(err)
     vim.notify('[repo-browser] ' .. err, vim.log.levels.ERROR)
   end)
