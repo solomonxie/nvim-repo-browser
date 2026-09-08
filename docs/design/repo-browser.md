@@ -28,8 +28,8 @@ moment you view it, not pre-baked.
 ## Non-goals
 - Not hosted/multi-user — single local viewer, one nvim session
 - No full-text code search (v1)
-- No nested `.gitignore` support — root-level only (v1)
-- No git history/blame/diff browsing — current working tree only
+- No blame/diff-outside-of-commits browsing (Commits tab covers commit
+  history + per-commit diffs; blame is out of scope)
 - Not chasing 100% highlight.js language coverage (e.g. Terraform/HCL
   renders unhighlighted, accepted)
 - No auto-push-on-file-change to an already-open browser tab (confirmed
@@ -66,8 +66,8 @@ Vite into `dist-shell/` — same rendering stack as before: file tree,
 breadcrumb, `react-markdown`+`remark-gfm` for markdown, `highlight.js` for
 code) plus a small live JSON API:
 - `GET /api/tree?path=<rel>` — one directory's immediate children, filtered
-  by the target repo's root `.gitignore` (lazy: only the directory being
-  viewed, not the whole tree)
+  by every `.gitignore` from the repo root down to that directory (lazy:
+  only the directory being viewed, not the whole tree)
 - `GET /api/file?path=<rel>` — text file content and classification
 - `GET /raw/<rel>` — raw bytes for images (`<img src="/raw/...">` directly,
   no base64 data-URI embedding)
@@ -91,8 +91,6 @@ file-watcher or auto-push mechanism is needed: freshness is guaranteed
 ## Risks / open questions
 - highlight.js has no HCL/Terraform grammar — accepted gap, documented in
   the README rather than switching highlighting libraries.
-- Root-only `.gitignore` support may under-filter repos that rely on nested
-  `.gitignore` rules — documented v1 limitation.
 - Node must be on the end user's `$PATH` for the plugin to work at all —
   a real runtime dependency (unlike the rejected pure-Lua option), though
   already true of this machine's setup; `:checkhealth repo-browser` should
