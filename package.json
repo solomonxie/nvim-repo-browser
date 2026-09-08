@@ -1,7 +1,7 @@
 {
   "name": "nvim-repo-browser",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.4.2",
   "scripts": {
     "build:frontend": "npm --prefix frontend run build",
     "build:server": "npm --prefix server run build",
