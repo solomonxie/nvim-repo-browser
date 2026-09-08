@@ -69,6 +69,6 @@ pins a fixed one.
 
 ## Screenshot
 
-![Commits](screenshot-commits.png)
-![Code](screenshot-code.png)
 ![Reader](screenshot-reader.png)
+![Code](screenshot-code.png)
+![Commits](screenshot-commits.png)
