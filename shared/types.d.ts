@@ -63,3 +63,16 @@ export interface CodeFrequencyWeek {
 export interface CodeFrequencyList {
   weeks: CodeFrequencyWeek[];
 }
+
+export interface BlameLine {
+  sha: string;
+  shortSha: string;
+  author: string;
+  date: string; // ISO 8601 (UTC -- git blame's porcelain format gives a unix timestamp + tz offset separately, not a combined ISO string, so this loses the author's local offset; fine for a supplementary display)
+  line: string;
+  committed: boolean; // false for "Not Committed Yet" -- uncommitted local changes
+}
+
+export interface BlameResult {
+  lines: BlameLine[];
+}
