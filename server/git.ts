@@ -1,4 +1,4 @@
-// Git plumbing for the Commits/Branches tabs -- shells out to `git` (array
+// Git plumbing for the Commits/Insights tabs -- shells out to `git` (array
 // args via execFileSync, never a shell, so no injection risk regardless of
 // ref content) against the server's fixed --root. `-c color.ui=false`
 // guards against a global git config forcing ANSI codes into our parsed
@@ -7,7 +7,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Branch, BranchList, CommitDetail, CommitList, CommitSummary } from '../shared/types';
+import type { CodeFrequencyList, CommitDetail, CommitList, CommitSummary, ContributorList } from '../shared/types';
 
 const US = '\x1f'; // unit separator -- between fields
 const RS = '\x1e'; // record separator -- between commits
@@ -64,26 +64,58 @@ export function getCommit(root: string, sha: string): CommitDetail | null {
   return { sha: gitSha, shortSha, author, date, subject, body: body ?? '', diff };
 }
 
-export function listBranches(root: string): BranchList {
-  const format = `%(refname:short)${US}%(objectname)${US}%(contents:subject)${US}%(committerdate:iso-strict)${US}%(HEAD)`;
-  const branches: Branch[] = [];
+export function listContributors(root: string): ContributorList {
+  let out: string;
+  try {
+    out = git(root, ['log', '--format=%an']);
+  } catch {
+    return { contributors: [] };
+  }
+  const counts = new Map<string, number>();
+  for (const line of out.split('\n')) {
+    if (!line) continue;
+    counts.set(line, (counts.get(line) ?? 0) + 1);
+  }
+  const contributors = [...counts.entries()]
+    .map(([author, commits]) => ({ author, commits }))
+    .sort((a, b) => b.commits - a.commits);
+  return { contributors };
+}
 
-  for (const [ref, remote] of [
-    ['refs/heads', false],
-    ['refs/remotes', true],
-  ] as const) {
-    let out: string;
-    try {
-      out = git(root, ['for-each-ref', `--format=${format}`, ref]);
-    } catch {
+// Monday of the week containing YYYY-MM-DD, as YYYY-MM-DD. Pure calendar
+// arithmetic via Date.UTC (never formatted through a local-timezone
+// method), so it's safe regardless of the server's own timezone.
+function weekStart(ymd: string): string {
+  const [y, m, d] = ymd.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  const sinceMonday = (date.getUTCDay() + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - sinceMonday);
+  return date.toISOString().slice(0, 10);
+}
+
+export function codeFrequency(root: string): CodeFrequencyList {
+  let out: string;
+  try {
+    out = git(root, ['log', '--pretty=format:@@%aI', '--numstat']);
+  } catch {
+    return { weeks: [] };
+  }
+  const buckets = new Map<string, { additions: number; deletions: number }>();
+  let week: string | null = null;
+  for (const line of out.split('\n')) {
+    if (line.startsWith('@@')) {
+      week = weekStart(line.slice(2, 12));
       continue;
     }
-    for (const line of out.split('\n')) {
-      if (!line.trim()) continue;
-      const [name, sha, subject, date, head] = line.split(US);
-      if (remote && name.endsWith('/HEAD')) continue; // symbolic pointer, not a real branch
-      branches.push({ name, remote, current: head === '*', sha, subject, date });
-    }
+    const m = /^(\d+|-)\t(\d+|-)\t/.exec(line);
+    if (!m || !week) continue;
+    const bucket = buckets.get(week) ?? { additions: 0, deletions: 0 };
+    bucket.additions += m[1] === '-' ? 0 : Number(m[1]);
+    bucket.deletions += m[2] === '-' ? 0 : Number(m[2]);
+    buckets.set(week, bucket);
   }
-  return { branches };
+  const weeks = [...buckets.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([weekOf, v]) => ({ week: weekOf, ...v }));
+  return { weeks };
 }
