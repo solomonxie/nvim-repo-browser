@@ -63,12 +63,7 @@ export function ContentPane({ path, onNavigate }: ContentPaneProps) {
     if (state.readme && state.readme.content && state.readme.content.trim() !== '') {
       return (
         <div className="content-pane">
-          <MarkdownView
-            path={state.readme.path}
-            content={state.readme.content ?? ''}
-            renderedHtml={state.readme.renderedHtml}
-            onNavigate={onNavigate}
-          />
+          <MarkdownView path={state.readme.path} content={state.readme.content ?? ''} onNavigate={onNavigate} />
         </div>
       );
     }
@@ -102,7 +97,7 @@ export function ContentPane({ path, onNavigate }: ContentPaneProps) {
   if (file.ext === '.md') {
     return (
       <div className="content-pane">
-        <MarkdownView path={file.path} content={file.content ?? ''} renderedHtml={file.renderedHtml} onNavigate={onNavigate} />
+        <MarkdownView path={file.path} content={file.content ?? ''} onNavigate={onNavigate} />
       </div>
     );
   }
