@@ -10,7 +10,7 @@ vim.g.loaded_repo_browser = true
 vim.api.nvim_create_user_command('RepoBrowser', function(cmd_opts)
   local path = cmd_opts.args ~= '' and cmd_opts.args or nil
   require('repo-browser').open(path)
-end, { nargs = '?', complete = 'dir', desc = 'Open a live GitHub-like browser for this repo' })
+end, { nargs = '?', complete = 'dir', desc = 'Open a live GitHub-like browser, deep-linked to the current buffer' })
 
 vim.api.nvim_create_user_command('RepoBrowserStop', function()
   require('repo-browser').stop()

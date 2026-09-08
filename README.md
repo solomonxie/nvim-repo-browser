@@ -50,7 +50,11 @@ a stale build. Without it, the first `:RepoBrowser` after an update
 self-builds instead, a one-time delay.
 
 ## Usage
-- `:RepoBrowser [path]` — open a browser for `path` (default: cwd)
+- `:RepoBrowser` — open a browser rooted at the current buffer's git repo,
+  deep-linked to that file (tree expanded and highlighted there). Falls
+  back to cwd, with nothing highlighted, for an unnamed buffer or a file
+  outside a repo.
+- `:RepoBrowser <path>` — open a browser rooted at `path` instead
 - `:RepoBrowserStop` — stop the server
 - `:checkhealth repo-browser`
 
