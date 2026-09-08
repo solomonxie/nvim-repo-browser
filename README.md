@@ -1,6 +1,7 @@
 # Live Repo Browser for Neovim
 
-![screenshot](docs/images/screenshot.png)
+Why: sometimes you just want to quickly browse a repo's README/code
+locally, the easy GitHub way, without pushing to a remote first.
 
 A GitHub-like file browser for any local repo, hosted entirely by Neovim.
 `:RepoBrowser` spawns a live server and opens your browser; quitting Neovim
@@ -33,19 +34,22 @@ See `docs/design/repo-browser.md` (why) and `docs/design/repo-browser-plan.md`
 
 ```lua
 -- lazy.nvim
-{ 'solomonxie/nvim-repo-browser', build = 'npm install && npm run build' }
+{ 'solomonxie/nvim-repo-browser' }
 ```
 ```lua
 -- packer.nvim
-use { 'solomonxie/nvim-repo-browser', run = 'npm install && npm run build' }
+use 'solomonxie/nvim-repo-browser'
 ```
 ```vim
 " vim-plug
-Plug 'solomonxie/nvim-repo-browser', { 'do': 'npm install && npm run build' }
+Plug 'solomonxie/nvim-repo-browser'
 ```
 
-The build step compiles `frontend/` → `dist-shell/` and `server/` →
-`server/dist/` once, not per use.
+No build hook needed — the first `:RepoBrowser` self-builds
+(`npm install && npm run build`, compiling `frontend/` → `dist-shell/` and
+`server/` → `server/dist/`) if it isn't built yet, a one-time delay. Add a
+`build`/`run`/`do` hook with that same command if you'd rather it happen at
+install/update time instead of on first use.
 
 ## Usage
 - `:RepoBrowser [path]` — open a browser for `path` (default: cwd)
@@ -63,3 +67,7 @@ pins a fixed one.
 - No syntax highlighting for Terraform/HCL (not in highlight.js)
 - Freshness is per click/reload, not push — an already-open tab needs a
   reload to see an edit
+
+## Screenshot
+
+![screenshot](docs/images/screenshot.png)
