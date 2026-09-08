@@ -41,14 +41,13 @@ use 'solomonxie/nvim-repo-browser'
 ```
 ```vim
 " vim-plug
-Plug 'solomonxie/nvim-repo-browser'
+Plug 'solomonxie/nvim-repo-browser', { 'do': 'npm install && npm run build' }
 ```
 
-No build hook needed — the first `:RepoBrowser` self-builds
-(`npm install && npm run build`, compiling `frontend/` → `dist-shell/` and
-`server/` → `server/dist/`) if it isn't built yet, a one-time delay. Add a
-`build`/`run`/`do` hook with that same command if you'd rather it happen at
-install/update time instead of on first use.
+The `do` hook rebuilds `frontend/` → `dist-shell/` and `server/` →
+`server/dist/` on every install/update, so `:PlugUpdate` never leaves you on
+a stale build. Without it, the first `:RepoBrowser` after an update
+self-builds instead, a one-time delay.
 
 ## Usage
 - `:RepoBrowser [path]` — open a browser for `path` (default: cwd)
