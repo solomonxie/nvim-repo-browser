@@ -154,6 +154,9 @@ details[open] > summary .tree-chevron-icon { transform: rotate(90deg); }
 .file-box-body { padding: 14px; }
 .file-box-body--flush { padding: 0; }
 
+.print-btn { margin-left: auto; padding: 6px; border: none; border-radius: 6px; background: none; color: var(--muted); cursor: pointer; display: flex; }
+.print-btn:hover { background: var(--bg); color: var(--fg); }
+
 .blame-view { font-family: monospace; font-size: 12px; overflow-x: auto; }
 .blame-row { display: flex; }
 .blame-gutter {
@@ -214,7 +217,7 @@ details[open] > summary .tree-chevron-icon { transform: rotate(90deg); }
 .markdown-body hr { border: none; border-top: 1px solid var(--border); }
 .markdown-body table { border-collapse: collapse; }
 .markdown-body th, .markdown-body td { border: 1px solid var(--border); padding: 0.4rem 0.8rem; }
-.markdown-body img { max-width: 100%; }
+.markdown-body img { max-width: 50%; }
 /* GFM task list -- the list's own bullet still renders next to the
    checkbox unless dropped explicitly. mdast-util-to-hast already tags
    these <li>s with a "task-list-item" class for exactly this purpose (its
@@ -284,3 +287,35 @@ details[open] > summary .tree-chevron-icon { transform: rotate(90deg); }
 .freq-fill { width: 100%; border-radius: 1px; }
 .freq-add { background: var(--diff-add); }
 .freq-del { background: var(--diff-del); }
+
+/* Print -- only the rendered file/README content. Chrome-only footer page
+   numbers via @page margin boxes (unsupported elsewhere, degrades to no
+   number); the breadcrumb footer is a fixed element instead so it repeats
+   on every page across browsers. */
+.print-footer { display: none; }
+
+@media print {
+  .top-bar, .sidebar, .breadcrumb, .file-box-header, .dir-box { display: none !important; }
+  .app, .main { display: block; overflow: visible; padding: 0; }
+  .file-box { border: none; }
+  .print-footer {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    font-size: 10px;
+    color: #666;
+    padding: 4px 0;
+    border-top: 1px solid #ccc;
+  }
+}
+
+@page {
+  margin: 1.5cm 1.5cm 2cm;
+  @bottom-right {
+    content: counter(page) " / " counter(pages);
+    font-size: 10px;
+    color: #666;
+  }
+}

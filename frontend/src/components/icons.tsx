@@ -27,6 +27,16 @@ export function ChevronIcon() {
   );
 }
 
+export function PrintIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+      <path fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" d="M4 6V1.5h8V6M4 12.5h8V15H4z" />
+      <rect x="1.5" y="6" width="13" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.4" />
+      <circle cx="11.5" cy="8" r="0.75" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function InsightsIcon() {
   return (
     <svg viewBox="0 0 16 16" width="16" height="16" className="tab-icon" aria-hidden="true">

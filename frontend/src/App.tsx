@@ -54,6 +54,10 @@ export function App() {
           <main className="main">
             <Breadcrumb path={route.path} rootLabel={repoName} onNavigate={(path) => navigate({ page: 'code', path })} />
             <ContentPane path={route.path} onNavigate={(path) => navigate({ page: 'code', path })} />
+            <div className="print-footer">
+              {repoName}
+              {route.path && ` / ${route.path.split('/').join(' / ')}`}
+            </div>
           </main>
         </div>
       )}
