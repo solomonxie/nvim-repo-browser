@@ -1,45 +1,65 @@
 # Live Repo Browser for Neovim
 
-A GitHub-like file browser for any local repo, hosted entirely by Neovim.
-`:RepoBrowser` spawns a small live server and opens it in your browser;
-quitting Neovim shuts it down. Every click reads the file fresh off disk —
-no indexing step, nothing to regenerate after an edit. Markdown renders via
-pandoc (GFM, mermaid diagrams, dark/light toggle).
+![screenshot](docs/images/screenshot.png)
 
-See `docs/design/repo-browser.md` for the why and
-`docs/design/repo-browser-plan.md` for the implementation plan.
+A GitHub-like file browser for any local repo, hosted entirely by Neovim.
+`:RepoBrowser` spawns a live server and opens your browser; quitting Neovim
+shuts it down. Every click reads disk fresh — no regenerate step. Markdown,
+mermaid diagrams, and syntax highlighting all render client-side in React;
+dark by default, toggle in the top bar. Code/Commits/Insights tabs, like
+GitHub.
+
+See `docs/design/repo-browser.md` (why) and `docs/design/repo-browser-plan.md`
+(implementation plan).
+
+## How it works
+- `:RepoBrowser` spawns a Node server (`server/`) scoped to your repo,
+  killed when Neovim quits.
+- The server serves a prebuilt React app (`frontend/` → `dist-shell/`,
+  built once) plus a JSON API — it never renders anything itself, only reads.
+- Every click is a live `fetch()`: the server `stat()`s the target at that
+  instant and returns fresh content (an in-memory cache only skips a
+  redundant re-read when nothing changed — never a source of staleness).
+- React renders markdown, mermaid, and syntax highlighting entirely
+  client-side from that JSON.
+- Commits/Insights work the same way against git: each request shells out
+  to `git log`/`git show` right then and parses the output.
 
 ## Requirements
 - Neovim 0.10+ (`vim.system`)
-- Node on `$PATH` (runs the live server; `:checkhealth repo-browser` verifies)
-- pandoc on `$PATH` (optional — renders markdown with GFM + mermaid diagrams;
-  without it, markdown falls back to plain client-side rendering)
+- Node on `$PATH` — `:checkhealth repo-browser` verifies
 
 ## Install
 
 ```lua
 -- lazy.nvim
-{
-  'solomonxie/nvim-repo-browser',
-  build = 'npm install && npm run build',
-}
+{ 'solomonxie/nvim-repo-browser', build = 'npm install && npm run build' }
+```
+```lua
+-- packer.nvim
+use { 'solomonxie/nvim-repo-browser', run = 'npm install && npm run build' }
+```
+```vim
+" vim-plug
+Plug 'solomonxie/nvim-repo-browser', { 'do': 'npm install && npm run build' }
 ```
 
-The build step compiles the frontend (`frontend/` → `dist-shell/`) and the
-server (`server/` → `server/dist/`) — a one-time step, not run per use.
+The build step compiles `frontend/` → `dist-shell/` and `server/` →
+`server/dist/` once, not per use.
 
 ## Usage
 - `:RepoBrowser [path]` — open a browser for `path` (default: cwd)
-- `:RepoBrowserStop` — stop the running server
-- `:checkhealth repo-browser` — verify Node is on `$PATH` and the server is built
+- `:RepoBrowserStop` — stop the server
+- `:checkhealth repo-browser`
 
-One server per Neovim session: re-opening the same root reuses it; a
-different root restarts it. Quitting Neovim (or `:RepoBrowserStop`) always
-kills it — nothing is left running in the background.
+One server per Neovim session (reused on the same root, restarted on a
+different one); it always dies with Neovim, or via `:RepoBrowserStop`.
+Port is dynamic by default; `require('repo-browser').setup({ port = 12345 })`
+pins a fixed one.
 
 ## Limitations
-- Root-level `.gitignore` only — nested `.gitignore` rules aren't applied
-- No full-text search, no git history/blame/diff — current working tree only
+- No full-text search, no git blame/diff-outside-of-commits — current
+  working tree + commit history only
 - No syntax highlighting for Terraform/HCL (not in highlight.js)
-- Freshness is per click/reload, not push — editing a file while its tab is
-  already open needs a reload to see the change (no auto-refresh)
+- Freshness is per click/reload, not push — an already-open tab needs a
+  reload to see an edit

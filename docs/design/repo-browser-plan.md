@@ -150,26 +150,29 @@ Ship-readiness — install instructions, help doc, end-to-end checks.
 Requested after real interactive use. Not part of the original design doc's
 v1 scope, but coherent extensions of it.
 
-- [x] T6.1 Pandoc-based markdown rendering (`server/pandoc.ts`,
-  `server/classify.ts`) — GFM fragment (`-f gfm --embed-resources`, no
-  `-s`), a new `renderedHtml` field on `FileContent`; mirrors the pipeline
-  in `~/myconf/dotfiles/vim/vimrc-functions.vim`'s `PreviewMarkdown()`
-  (pandoc, mermaid, dark/light) but rendered inline
-  (`dangerouslySetInnerHTML`) instead of as a standalone file, so links
-  can be intercepted (see T6.2). Falls back to the existing client-side
-  `react-markdown` render when pandoc isn't on `$PATH` (`:checkhealth`
-  warns, doesn't error). Mermaid via the `mermaid` npm package, dark/light
-  toggle persisted per-browser via `localStorage`
-  (`frontend/src/lib/theme.ts`) — depends: T3.4
+- [x] T6.1 Pandoc-based markdown rendering — tried, then reverted same
+  session per "i like react to render it entirely": added a
+  `server/pandoc.ts` shelling out to pandoc for GFM+mermaid, then removed
+  it in favor of doing it all client-side (see T6.1r below), so the
+  plugin has one fewer external runtime dependency. Nothing pandoc-shaped
+  remains in the codebase — depends: T3.4
+- [x] T6.1r Markdown rendering entirely in React (`MarkdownView.tsx`) —
+  `react-markdown`+`remark-gfm` for GFM (tables/task-lists/strikethrough),
+  a custom `code` component detects a ` ```mermaid ` fence and renders it
+  via the `mermaid` npm package's `mermaid.render()` (one `<div>` per
+  diagram, re-rendered on theme change), a custom `a` component reuses
+  `resolveRelativeLink` (see T6.2) for in-app link routing, and any other
+  fenced language runs through the same `hljs.highlightElement` pattern
+  `CodeView.tsx` already uses. No server involvement in markdown at all
+  beyond serving its raw text — depends: T6.1
 - [x] T6.2 Fix: markdown links 404'd — a relative link's `href` resolves
   against the page's real URL path (always `/` under hash routing), not
   the current hash fragment, so `<a href="./other.md">` tried to navigate
   to `/other.md` instead of updating the hash. Fixed by intercepting link
-  clicks inside the rendered markdown (`frontend/src/lib/paths.ts`'s
-  `resolveRelativeLink`, used by both the pandoc and `react-markdown`
-  render paths in `MarkdownView.tsx`) and routing them through the app's
-  own `onNavigate` instead of letting the browser navigate; external
-  `http(s)` links get `target="_blank"` — depends: T6.1
+  clicks (`frontend/src/lib/paths.ts`'s `resolveRelativeLink`, used by
+  `MarkdownView.tsx`'s custom `a` component) and routing them through the
+  app's own `onNavigate` instead of letting the browser navigate; external
+  `http(s)` links get `target="_blank"` — depends: T6.1r
 - [x] T6.3 File tree UI polish, GitHub-like (`frontend/src/components/
   icons.tsx`) — small inline-SVG folder/file icons (not a full icon
   library), tighter row spacing, rounded hover, indentation guide lines —
@@ -196,8 +199,66 @@ v1 scope, but coherent extensions of it.
     → highlight.js `diff` language mapping), `BranchList.tsx`
     (local/remote sections, current branch starred)
 
+- [x] T6.5 Site-wide dark/light theme (`frontend/src/lib/theme.tsx`), not
+  just the markdown pane — a `ThemeProvider`/`useTheme()` context, dark by
+  default, toggled from the top bar (not per-view), persisted via
+  `localStorage`. Every color in `styles.css` is a CSS custom property
+  (`--bg`/`--fg`/`--muted`/`--border`/`--link`/`--surface`/etc.) redefined
+  under `body.theme-light`, so the toggle now affects the sidebar, tabs,
+  breadcrumb, and code/commit/insights views too, not just markdown.
+  highlight.js has no scoped light+dark themes in one stylesheet, so its
+  precompiled CSS is swapped by changing a single `<link>`'s `href`
+  between `github.css`/`github-dark.css` (`?url` Vite imports) rather than
+  statically importing both — depends: T6.1r
+- [x] T6.6 Nested `.gitignore` support (`server/walk.ts`) — upgraded from
+  root-only: `buildIgnoreChain` now reads every `.gitignore` from the repo
+  root down to the directory being listed, rebasing each nested file's
+  patterns onto its own directory (an unanchored bare name gets a `**/`
+  prefix per gitignore's own "matches at any depth below this level"
+  rule; an anchored or `/`-prefixed pattern is just prepended) before
+  handing them all to one `ignore()` matcher — includes negation (`!`)
+  correctly since patterns are added in root-to-leaf order and `ignore`
+  implements git's last-match-wins semantics. Also handles the
+  pytest/mypy/ruff-style "self-ignoring" cache directory convention
+  (a `<dir>/.gitignore` containing a bare `*`) — no ancestor rule ever
+  names `.pytest_cache` itself, yet `git status` still hides it because
+  everything inside is ignored, so `isSelfIgnoring` replicates that by
+  filtering any subdirectory whose own `.gitignore` is exactly `*`/`/*` —
+  depends: T2.2
+- [x] T6.7 Commits list reformatted, twice — first to a single-line
+  `YYYY-mm-dd  author  commit_id  msg` row (`frontend/src/lib/format.ts`'s
+  `shortDate`, plain ISO-string slicing, never a `Date` object, so no
+  timezone-shift risk), then to GitHub's own grouped-by-day card layout
+  (`CommitList.tsx`'s `groupByDay` + `.commit-group`/`.commit-card`): a
+  "Commits on `<Month Day, Year>`" header per calendar day (`longDate`,
+  also pure string math) followed by each commit as a card — bold
+  subject, "`<author>` committed `<relativeTime>`", sha pill — matching a
+  reference screenshot of github.com's commit list — depends: T6.4
+- [x] T6.8 Branches tab replaced with **Insights** (`Insights.tsx`) — one
+  flat page, sectioned, GitHub's Insights scoped to what's useful for a
+  local repo:
+  - **Contributors** (`ContributorsChart.tsx`) — commits per author via
+    `git log --format=%an` tallied in JS, horizontal bars, one sequential
+    hue (a ranked-magnitude comparison, not an identity comparison, so
+    varying hue per bar would falsely imply a second dimension); capped
+    at the top 20 with a "+N more" note
+  - **Code frequency** (`CodeFrequencyChart.tsx`) — additions/deletions
+    per week via `git log --pretty=format:@@%aI --numstat` (server/git.ts's
+    `codeFrequency`, bucketed by ISO week via pure `Date.UTC` arithmetic,
+    never a locale-dependent formatter), rendered as a diverging bar chart
+    (additions up, deletions down from a shared zero baseline) — a
+    genuine polarity measure, not a status-color reuse, and position
+    (above/below the line) carries the signal primarily, green/red
+    secondarily, matching the +/- diff convention already used elsewhere
+    in this app
+  - Branch listing itself (`server/git.ts`'s `listBranches`,
+    `BranchList.tsx`, the `Branch`/`BranchList` types) removed outright,
+    not just unlinked — depends: T6.4
+
 Verified end-to-end via headless-Chromium screenshots against this repo's
-own git history: Commits list renders and pages; clicking a commit shows
-its diff with correct add/remove highlighting; Branches shows `master`
-(current, highlighted) and `origin/master` (`origin/HEAD` correctly
-filtered out as a non-branch pointer).
+own git history: theme toggle now recolors the whole app, not just
+markdown; nested-`.gitignore` and self-ignoring-directory filtering
+confirmed against `~/workspace/coding-interviews` (a real multi-package
+repo with a pytest cache dir); Commits renders grouped cards matching the
+reference screenshot; Insights' two charts render with real data from
+this repo's own history.
