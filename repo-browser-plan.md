@@ -1,6 +1,6 @@
 # Implementation plan: nvim-repo-browser
 
-See `docs/design/repo-browser.md` for the why. This is the what/order.
+See `repo-browser.md` for the why. This is the what/order.
 
 ## Phase 1: Repo rename & plugin skeleton
 Pivoted from a static `file://` SPA to an nvim-hosted live server (see
@@ -29,7 +29,7 @@ moved the existing frontend scaffold aside, dropped what no longer fits.
 ## Phase 2: Node live server
 The core of the pivot: a small `node:http` server, spawned as a job by the
 Lua plugin, that reads the target repo live per request. No batch step, no
-disk-persisted cache — see `docs/design/repo-browser.md` Decision.
+disk-persisted cache — see `repo-browser.md` Decision.
 
 - [x] T2.1 File classification (`server/classify.ts`) — text/image/
   binary/too-large, given a path+stat; ports `buildFileNode`'s
@@ -262,3 +262,46 @@ confirmed against `~/workspace/coding-interviews` (a real multi-package
 repo with a pytest cache dir); Commits renders grouped cards matching the
 reference screenshot; Insights' two charts render with real data from
 this repo's own history.
+
+## Phase 7: GitHub-style file view (v0.2.0)
+Requested after comparing screenshots against github.com directly.
+
+- [x] T7.1 `docs/` flattened to repo root — `docs/design/{repo-browser.md,
+  repo-browser-plan.md}` → `repo-browser.md`/`repo-browser-plan.md`,
+  `docs/images/screenshot.png` → `screenshot-code.png`/
+  `screenshot-commits.png` (also replaced with two purpose-shot images:
+  Code and Commits). `doc/` (singular, Neovim's own `:help` convention)
+  is unrelated and stays — the two looked like a typo of each other but
+  serve different masters (Neovim's runtime vs. this project's own docs)
+  — depends: none
+- [x] T7.2 Markdown/dark-theme rendering fixes found by screenshot diff
+  against github.com: headings had no bottom border, fenced code blocks
+  had no background at all (a leftover pandoc-era
+  `.markdown-body pre code { background: none }` rule outranked
+  highlight.js's own `.hljs` rule on specificity), highlight.js's
+  github-dark.css background happened to equal the page background once
+  restored (zero contrast, overridden to `--surface`), and dark-mode body
+  text read gray instead of GitHub's brighter default — depends: T6.5
+- [x] T7.3 GitHub's bordered file-view card (`FileBox.tsx`) — Preview/
+  Code/Blame tabs (Preview only for markdown), a "N lines · size" meta
+  line, a Raw link (`/raw/*` now defaults unknown extensions to
+  `text/plain` instead of a download prompt). `ContentPane.tsx` picks
+  which mode to show first (Preview for `.md`, Code otherwise) and hands
+  `FileBox` a render-prop for Preview/Code content, since that's already
+  `MarkdownView`/`CodeView` — depends: T3.5
+- [x] T7.4 Blame mode (`server/git.ts`'s `blameFile`, `BlameView.tsx`) —
+  `git blame --line-porcelain` on the file's *live working-tree* content
+  (not just HEAD), so locally uncommitted edits show "Not committed yet"
+  instead of being blamed on the wrong commit — consistent with this
+  app's live-content philosophy elsewhere. Hand-parses porcelain format
+  (a full metadata block on a commit's first appearance, a compact
+  repeat-header for its later lines) since only the first occurrence of
+  each commit carries author/time. Consecutive same-commit lines only
+  show the gutter once, matching GitHub's own grouped blame display —
+  depends: T6.4
+- [x] T7.5 Version bumped to 0.2.0 (root/`frontend`/`server` `package.json`)
+
+Verified end-to-end via headless-Chromium screenshots in both themes:
+Preview/Code/Blame tabs switch correctly, Blame correctly shows "Not
+committed yet" for this repo's own then-uncommitted README changes,
+code-block contrast and heading underlines now match github.com.

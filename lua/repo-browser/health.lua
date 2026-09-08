@@ -1,5 +1,5 @@
 -- :checkhealth repo-browser -- verifies Node is on $PATH and the server
--- has been built (see T5.2, docs/design/repo-browser-plan.md).
+-- has been built (see T5.2, repo-browser-plan.md).
 
 local config = require('repo-browser.config')
 

@@ -10,8 +10,7 @@ mermaid diagrams, and syntax highlighting all render client-side in React;
 dark by default, toggle in the top bar. Code/Commits/Insights tabs, like
 GitHub.
 
-See `docs/design/repo-browser.md` (why) and `docs/design/repo-browser-plan.md`
-(implementation plan).
+See `repo-browser.md` (why) and `repo-browser-plan.md` (implementation plan).
 
 ## How it works
 - `:RepoBrowser` spawns a Node server (`server/`) scoped to your repo,
@@ -70,4 +69,5 @@ pins a fixed one.
 
 ## Screenshot
 
-![screenshot](docs/images/screenshot.png)
+![Code](screenshot-code.png)
+![Commits](screenshot-commits.png)
