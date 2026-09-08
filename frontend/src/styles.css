@@ -20,19 +20,27 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; co
 
 .tree-row {
   cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 6px;
+  border-radius: 6px;
   white-space: nowrap;
 }
 .tree-row:hover { background: #f6f8fa; }
 .tree-row.selected { background: #ddf4ff; font-weight: 600; }
-.tree-children { margin-left: 14px; }
-.tree-loading, .tree-error { color: #656d76; font-style: italic; }
+.tree-children { margin-left: 10px; padding-left: 10px; border-left: 1px solid #eaeef2; }
+.tree-loading, .tree-error { color: #656d76; font-style: italic; padding: 4px 6px; }
+
+.tree-icon { flex-shrink: 0; }
+.tree-icon-folder { color: #54aeff; }
+.tree-icon-file { color: #656d76; }
+.tree-label { overflow: hidden; text-overflow: ellipsis; }
 
 summary { list-style: none; }
 summary::-webkit-details-marker { display: none; }
-summary::before { content: '▸ '; }
-details[open] > summary::before { content: '▾ '; }
+summary::before { content: '▸'; display: inline-block; width: 0.8em; color: #656d76; flex-shrink: 0; }
+details[open] > summary::before { content: '▾'; }
 
 .breadcrumb { margin-bottom: 16px; font-size: 14px; }
 .breadcrumb a { cursor: pointer; color: #0969da; text-decoration: none; }
