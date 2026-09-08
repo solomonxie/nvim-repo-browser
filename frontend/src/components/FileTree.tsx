@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import type { DirEntry } from '../../../shared/types';
 import { fetchTree } from '../lib/api';
+import { FileIcon, FolderIcon } from './icons';
 
 interface TreeNodeProps {
   entry: DirEntry;
@@ -20,7 +21,8 @@ function TreeNode({ entry, selectedPath, onSelect }: TreeNodeProps) {
     const selected = entry.path === selectedPath;
     return (
       <div className={`tree-row tree-file${selected ? ' selected' : ''}`} onClick={() => onSelect(entry.path)}>
-        {entry.name}
+        <FileIcon />
+        <span className="tree-label">{entry.name}</span>
       </div>
     );
   }
@@ -37,7 +39,8 @@ function TreeNode({ entry, selectedPath, onSelect }: TreeNodeProps) {
   return (
     <details onToggle={handleToggle}>
       <summary className={`tree-row${entry.path === selectedPath ? ' selected' : ''}`} onClick={() => onSelect(entry.path)}>
-        {entry.name}
+        <FolderIcon />
+        <span className="tree-label">{entry.name}</span>
       </summary>
       {loading && <div className="tree-row tree-loading">Loading…</div>}
       <div className="tree-children">
