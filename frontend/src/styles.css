@@ -148,13 +148,18 @@ details[open] > summary::before { content: '▾'; }
 /* Code -- background/text color come from the active highlight.js theme
    (swapped between github.css/github-dark.css in lib/theme.tsx) via its
    own .hljs class, not hardcoded here, so it always matches the site
-   theme; padding/scroll/radius are the wrapping <pre>'s job, since hljs's
-   theme CSS deliberately leaves that to the embedder. */
-.code-view, .markdown-body pre { overflow-x: auto; border-radius: 6px; padding: 14px; font-size: 13px; }
+   theme; padding/scroll/radius are the wrapping <pre>'s job. Margin is
+   reset since the browser's own default <pre> margin (1em top/bottom)
+   would otherwise stack with this padding. */
+.code-view, .markdown-body pre { margin: 0; overflow-x: auto; border-radius: 6px; padding: 14px; font-size: 13px; }
 /* Override just the theme's own base color/background (its .hljs-* token
    colors are untouched) -- highlight.js's github-dark.css happens to use
-   the exact same background as our page, giving zero visible contrast. */
-.code-view .hljs, .markdown-body .hljs { background: var(--surface); color: var(--fg); }
+   the exact same background as our page, giving zero visible contrast.
+   Its stylesheet also sets its own padding on .hljs (1em on a fenced
+   block, 3px 5px inline) -- zero that out too, since the <pre>/chip
+   above already supplies padding; left in, it stacked with it into a
+   large gap before the first line, worst on narrow viewports. */
+.code-view .hljs, .markdown-body .hljs { background: var(--surface); color: var(--fg); padding: 0; }
 
 .markdown-body h1, .markdown-body h2, .markdown-body h3,
 .markdown-body h4, .markdown-body h5, .markdown-body h6 { color: var(--fg); }
