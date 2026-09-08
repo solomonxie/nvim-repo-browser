@@ -5,6 +5,7 @@
 
 import { useState, type ReactNode } from 'react';
 import { BlameView } from './BlameView';
+import { PrintIcon } from './icons';
 
 export type FileMode = 'preview' | 'code' | 'blame';
 
@@ -33,6 +34,9 @@ export function FileBox({ path, showPreview, children }: FileBoxProps) {
             Blame
           </button>
         </div>
+        <button className="print-btn" onClick={() => window.print()} title="Print">
+          <PrintIcon />
+        </button>
       </div>
       {/* code and blame both supply their own inset (.code-view; .blame-gutter/
           .blame-line) -- stacking file-box-body's padding on top of that

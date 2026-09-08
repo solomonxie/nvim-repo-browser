@@ -10,7 +10,7 @@ import { fetchFile, fetchTree, isImageExt, rawUrl } from '../lib/api';
 import { MarkdownView } from './MarkdownView';
 import { CodeView } from './CodeView';
 import { FileBox } from './FileBox';
-import { ChevronIcon } from './icons';
+import { ChevronIcon, PrintIcon } from './icons';
 
 type ContentState =
   | { kind: 'loading' }
@@ -105,7 +105,12 @@ export function ContentPane({ path, onNavigate }: ContentPaneProps) {
         <DirBox path={path} entries={state.listing.entries} onNavigate={onNavigate} />
         {hasReadme && (
           <div className="file-box">
-            <div className="file-box-header file-box-header--plain">{state.readme!.path.split('/').pop()}</div>
+            <div className="file-box-header file-box-header--plain">
+              {state.readme!.path.split('/').pop()}
+              <button className="print-btn" onClick={() => window.print()} title="Print">
+                <PrintIcon />
+              </button>
+            </div>
             <div className="file-box-body">
               <MarkdownView path={state.readme!.path} content={state.readme!.content ?? ''} onNavigate={onNavigate} />
             </div>
