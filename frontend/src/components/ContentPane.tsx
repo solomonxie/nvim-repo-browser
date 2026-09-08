@@ -95,12 +95,10 @@ export function ContentPane({ path, onNavigate }: ContentPaneProps) {
   if (file.binary) {
     return <div className="content-pane placeholder">Binary file not shown.</div>;
   }
-  const lineCount = (file.content ?? '').split('\n').length;
-
   if (file.ext === '.md') {
     return (
       <div className="content-pane">
-        <FileBox path={file.path} size={file.size} lineCount={lineCount} showPreview>
+        <FileBox path={file.path} showPreview>
           {(mode) =>
             mode === 'preview' ? (
               <MarkdownView path={file.path} content={file.content ?? ''} onNavigate={onNavigate} />
@@ -114,7 +112,7 @@ export function ContentPane({ path, onNavigate }: ContentPaneProps) {
   }
   return (
     <div className="content-pane">
-      <FileBox path={file.path} size={file.size} lineCount={lineCount} showPreview={false}>
+      <FileBox path={file.path} showPreview={false}>
         {() => <CodeView path={file.path} ext={file.ext} content={file.content ?? ''} />}
       </FileBox>
     </div>

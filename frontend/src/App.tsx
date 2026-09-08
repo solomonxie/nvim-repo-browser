@@ -2,7 +2,7 @@
 // Insights) + a global theme toggle + per-page content, wired to the
 // hash router.
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRoute } from './lib/router';
 import { useTheme } from './lib/theme';
 import { fetchMeta } from './lib/api';
@@ -17,14 +17,16 @@ import { Insights } from './components/Insights';
 export function App() {
   const [route, navigate] = useRoute();
   const { theme, toggle } = useTheme();
+  const [repoName, setRepoName] = useState('root');
 
   useEffect(() => {
     fetchMeta()
       .then((meta) => {
         document.title = meta.name;
+        setRepoName(meta.name);
       })
       .catch(() => {
-        // leave the static fallback title from index.html
+        // leave the static fallback title from index.html and "root"
       });
   }, []);
 
@@ -50,7 +52,7 @@ export function App() {
             <FileTree selectedPath={route.path} onSelect={(path) => navigate({ page: 'code', path })} />
           </aside>
           <main className="main">
-            <Breadcrumb path={route.path} onNavigate={(path) => navigate({ page: 'code', path })} />
+            <Breadcrumb path={route.path} rootLabel={repoName} onNavigate={(path) => navigate({ page: 'code', path })} />
             <ContentPane path={route.path} onNavigate={(path) => navigate({ page: 'code', path })} />
           </main>
         </div>
