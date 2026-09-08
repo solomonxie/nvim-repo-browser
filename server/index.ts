@@ -1,10 +1,14 @@
-// T2.4: HTTP server entry point. Wires walk.ts + classify.ts + liveCache.ts.
+// T2.4: HTTP server entry point. Wires walk.ts + classify.ts + liveCache.ts
+// + git.ts.
 //
 //   GET /                 -> ../dist-shell/index.html (built frontend shell)
 //   GET /assets/*          -> ../dist-shell static assets
 //   GET /api/tree?path=    -> DirListing (one directory level, live)
 //   GET /api/file?path=    -> FileContent (live, cached by mtime+size)
 //   GET /raw/*             -> raw bytes (images), streamed directly
+//   GET /api/commits[?before=&limit=]  -> CommitList (git log, paged)
+//   GET /api/commit?sha=   -> CommitDetail (git show, incl. diff)
+//   GET /api/branches      -> BranchList (git for-each-ref, local+remote)
 //
 // argv: --root <path> --port <n> (0 = OS-assigned). Logs a single
 // "listening on <port>" line once bound -- lua/repo-browser/server.lua
@@ -16,6 +20,7 @@ import { join, normalize, extname, basename } from 'node:path';
 import { listDir, repoName } from './walk';
 import { classifyFile } from './classify';
 import { LiveCache } from './liveCache';
+import { isGitRepo, listCommits, getCommit, listBranches } from './git';
 import type { DirListing, FileContent } from '../shared/types';
 
 function parseArgs(argv: string[]): { root: string; port: number } {
@@ -94,6 +99,26 @@ const server = createServer((req, res) => {
     } catch {
       return send(res, 404, 'text/plain', 'not found');
     }
+  }
+
+  if (url.pathname === '/api/commits') {
+    if (!isGitRepo(root)) return send(res, 404, 'application/json', JSON.stringify({ error: 'not a git repository' }));
+    const limit = Number(url.searchParams.get('limit') ?? '30') || 30;
+    const before = url.searchParams.get('before');
+    return send(res, 200, 'application/json', JSON.stringify(listCommits(root, limit, before)));
+  }
+
+  if (url.pathname === '/api/commit') {
+    if (!isGitRepo(root)) return send(res, 404, 'application/json', JSON.stringify({ error: 'not a git repository' }));
+    const sha = url.searchParams.get('sha');
+    const commit = sha ? getCommit(root, sha) : null;
+    if (!commit) return send(res, 404, 'application/json', JSON.stringify({ error: 'commit not found' }));
+    return send(res, 200, 'application/json', JSON.stringify(commit));
+  }
+
+  if (url.pathname === '/api/branches') {
+    if (!isGitRepo(root)) return send(res, 404, 'application/json', JSON.stringify({ error: 'not a git repository' }));
+    return send(res, 200, 'application/json', JSON.stringify(listBranches(root)));
   }
 
   if (url.pathname.startsWith('/raw/')) {
