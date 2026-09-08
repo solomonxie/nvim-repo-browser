@@ -10,11 +10,10 @@
   --link: #58a6ff;
   --selected-bg: #1c3a5e;
   --accent: #f78166;
-  --folder: #58a6ff;
   --diff-add: #3fb950;
   --diff-del: #f85149;
-  --code-inline: #d2a8ff;
-  --code-inline-bg: rgba(210, 168, 255, 0.15);
+  --code-inline: #ff79c6;
+  --code-inline-bg: rgba(255, 121, 198, 0.15);
 }
 body.theme-light {
   --bg: #ffffff;
@@ -25,11 +24,10 @@ body.theme-light {
   --link: #0969da;
   --selected-bg: #ddf4ff;
   --accent: #fd8c73;
-  --folder: #54aeff;
   --diff-add: #1a7f37;
   --diff-del: #cf222e;
-  --code-inline: #8250df;
-  --code-inline-bg: rgba(130, 80, 223, 0.1);
+  --code-inline: #c9317c;
+  --code-inline-bg: rgba(201, 49, 124, 0.1);
 }
 
 * { box-sizing: border-box; }
@@ -96,9 +94,7 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; ba
 .tree-children { margin-left: 10px; padding-left: 10px; border-left: 1px solid var(--border); }
 .tree-loading, .tree-error { color: var(--muted); font-style: italic; padding: 4px 6px; }
 
-.tree-icon { flex-shrink: 0; }
-.tree-icon-folder { color: var(--folder); }
-.tree-icon-file { color: var(--muted); }
+.tree-icon { flex-shrink: 0; font-size: 18px; line-height: 1; }
 .tree-label { overflow: hidden; text-overflow: ellipsis; }
 
 summary { list-style: none; }
@@ -106,7 +102,7 @@ summary::-webkit-details-marker { display: none; }
 summary::before { content: '▸'; display: inline-block; width: 0.8em; color: var(--muted); flex-shrink: 0; }
 details[open] > summary::before { content: '▾'; }
 
-.breadcrumb { margin-bottom: 8px; font-size: 14px; }
+.breadcrumb { margin-bottom: 16px; font-size: 18px; font-weight: 600; }
 .breadcrumb a { cursor: pointer; color: var(--link); text-decoration: none; }
 .breadcrumb a:hover { text-decoration: underline; }
 .breadcrumb-sep { color: var(--muted); }
@@ -178,7 +174,7 @@ details[open] > summary::before { content: '▾'; }
 
 /* Commits -- GitHub's own commit-list layout: a date header per day,
    then each commit as a card (subject, "author committed X ago", sha). */
-.commit-group-header { font-size: 13px; color: var(--muted); margin: 20px 0 8px; }
+.commit-group-header { font-size: 18px; font-weight: 600; color: var(--fg); margin: 20px 0 10px; }
 .commit-group:first-child .commit-group-header { margin-top: 0; }
 .commit-card {
   padding: 12px 16px;
