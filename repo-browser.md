@@ -1,5 +1,8 @@
 # nvim-hosted repo file browser
 
+**Every surface is drawn in `docs/uiux/`** — the nvim commands, the Code tab,
+Commits and Insights. This file carries the problem and the decision.
+
 ## Problem
 A Doxygen prototype (tried first) hit two structural ceilings for browsing a
 shell/dotfiles-style repo: no real syntax highlighting for shell/vim/yaml
